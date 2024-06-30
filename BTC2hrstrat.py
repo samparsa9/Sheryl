@@ -10,7 +10,6 @@ from datetime import datetime, timedelta, timezone
 import time as tm
 import sys
 from dotenv import load_dotenv
-import config as conf
 import helperfuncs as hf
 
 load_dotenv()
