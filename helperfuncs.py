@@ -2,6 +2,7 @@ import alpaca_trade_api as tradeapi
 import numpy as np
 import talib as ta
 import config as conf
+import BTC2hrstrat as strat
 
 # Function to make predictions
 def predict_next_close(model, data, seq_length=60, close_mean=0, close_std=1):
@@ -30,17 +31,14 @@ def predict_next_close(model, data, seq_length=60, close_mean=0, close_std=1):
 
 
 
-# Initialize Alpaca API
-api = tradeapi.REST(conf.api_key, conf.api_secret, conf.base_url, api_version='v2')
-
 
 def fetch_data(symbol, timeframe, limit=1000):  # Increased limit to fetch more data points
-    bars = api.get_crypto_bars(symbol, timeframe).df.tail(limit)
+    bars = strat.api.get_crypto_bars(symbol, timeframe).df.tail(limit)
     return bars
 
 def get_available_balance(asset='BTC/USD'):
     try:
-        position = api.get_position(asset)
+        position = strat.api.get_position(asset)
         return float(position.qty)
     except tradeapi.rest.APIError as e:
         if e.status_code == 404:
@@ -56,7 +54,7 @@ def calculate_indicators(df):
 def execute_trade(order_type, amount):
     try:
         if order_type == 'buy':
-            order = api.submit_order(
+            order = strat.api.submit_order(
                 symbol=conf.symbol,
                 qty=amount,
                 side='buy',
@@ -67,7 +65,7 @@ def execute_trade(order_type, amount):
             available_balance = get_available_balance(conf.symbol)
             if available_balance < amount:
                 amount = available_balance
-            order = api.submit_order(
+            order = strat.api.submit_order(
                 symbol=conf.symbol,
                 qty=amount,
                 side='sell',

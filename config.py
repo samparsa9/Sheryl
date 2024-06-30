@@ -1,8 +1,3 @@
-import tensorflow as tf
-
-# Loading Model
-model = tf.keras.models.load_model('Alpacabot/Models/lstm_bitcoin_model.keras')
-
 # base url
 base_url = 'https://paper-api.alpaca.markets'  # Remove /v2 from the base URL
 
