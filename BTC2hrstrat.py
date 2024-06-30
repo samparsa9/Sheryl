@@ -9,8 +9,11 @@ import alpaca_trade_api as tradeapi
 from datetime import datetime, timedelta, timezone
 import time as tm
 import sys
+from dotenv import load_dotenv
 
-#bruh
+load_dotenv()
+api_key = os.getenv('api_key')
+api_secret = os.getenv('api_secret')
 
 
 # Import your custom modules
@@ -18,7 +21,7 @@ import config as conf
 import helperfuncs as hf
 
 # Initialize Alpaca API
-api = tradeapi.REST(conf.api_key, conf.api_secret, conf.base_url, api_version='v2')
+api = tradeapi.REST(api_key, api_secret, conf.base_url, api_version='v2')
 
 
 def main():
