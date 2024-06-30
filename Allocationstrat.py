@@ -8,22 +8,57 @@ from sklearn.preprocessing import StandardScaler
 import requests
 from bs4 import BeautifulSoup
 
-def fetch_data(tickers, start_date='2020-01-01', end_date='2023-01-01'):
-    data = yf.download(tickers, start=start_date, end=end_date)['Adj Close']
-    returns = data.dropna()
-    return returns
+stockdf = pd.DataFrame({'Ticker': ['MMM', 'AXP', 'AMGN', 'AMZN', 'AAPL', 'BA', 'CAT', 'CVX', 'CSCO', 'KO', 'DIS', 'DOW', 'GS', 'HD', 'HON', 'IBM', 'INTC', 'JNJ', 'JPM', 'MCD', 'MRK', 'MSFT', 'NKE', 'PG', 'CRM', 'TRV', 'UNH', 'VZ', 'V', 'WMT']})
 
-tickerdf = pd.read_csv('Sheryl/dow_jones_companies.csv')
-ticker_list = []
-for ticker in tickerdf['Symbol']:
-    ticker_list.append(ticker)
+stockdf.set_index('Ticker', inplace=True)
 
-print(ticker_list)
 
-data = fetch_data(ticker_list)
+# tickerdf = pd.read_csv('dow_jones_companies.csv', index_col='Symbol')
 
-print(data)
 
+# Initialize a column for the 200-day moving average percentage difference
+stockdf['200 SMA % Difference'] = None
+
+# Fetch historical data and calculate 200-day SMA and percentage difference for each symbol
+for index, row in stockdf.iterrows():
+    ticker = index  # Since 'Symbol' is now the index
+    # Fetch historical data
+    data = yf.download(ticker, period='1y')
+    print(data)
+    # Calculate the 200-day moving average
+    if len(data) >= 200:
+        data['200 SMA'] = data['Close'].rolling(window=200).mean()
+        # Calculate the percentage difference
+        latest_close = data['Close'].iloc[-1]
+        latest_sma = data['200 SMA'].iloc[-1]
+        if latest_sma != 0:  # Avoid division by zero
+            percent_diff = ((latest_close - latest_sma) / latest_sma) * 100
+            # Assign the percentage difference to the DataFrame
+            stockdf.at[index, '200 SMA % Difference'] = percent_diff
+
+
+
+# Save the updated DataFrame to a new CSV file (optional)
+stockdf.to_csv('dow_jones_companies.csv', index=False)
+
+
+
+# Display the updated DataFrame
+print(stockdf)
+
+
+
+# Normalize data
+scaler = StandardScaler()
+scaled_returns = scaler.fit_transform(stockdf)
+
+
+# Apply K-means clustering
+kmeans = KMeans(n_clusters=3, random_state=0)
+clusters = kmeans.fit_predict(scaled_returns)
+stockdf['Cluster'] = clusters
+
+print(stockdf["Cluster"])
 
 # url = "https://en.wikipedia.org/wiki/Dow_Jones_Industrial_Average"
 

@@ -1,31 +1,31 @@
-,Company,Exchange,Symbol,Industry,Date added,Notes,Index weighting
-0,3M,NYSE,MMM,Conglomerate,1976-08-09,As Minnesota Mining and Manufacturing,1.54%
-1,American Express,NYSE,AXP,Financial services,1982-08-30,,3.64%
-2,Amgen,NASDAQ,AMGN,Biopharmaceutical,2020-08-31,,4.80%
-3,Amazon,NASDAQ,AMZN,Retailing,2024-02-26,,2.93%
-4,Apple,NASDAQ,AAPL,Information technology,2015-03-19,,3.04%
-5,Boeing,NYSE,BA,Aerospace and defense,1987-03-12,,3.36%
-6,Caterpillar,NYSE,CAT,Construction and mining,1991-05-06,,5.45%
-7,Chevron,NYSE,CVX,Petroleum industry,2008-02-19,Also 1930-07-18 to 1999-11-01,2.59%
-8,Cisco,NASDAQ,CSCO,Information technology,2009-06-08,,0.81%
-9,Coca-Cola,NYSE,KO,Drink industry,1987-03-12,Also 1932-05-26 to 1935-11-20,1.02%
-10,Disney,NYSE,DIS,Broadcasting and entertainment,1991-05-06,,1.81%
-11,Dow,NYSE,DOW,Chemical industry,1991-05-06,,0.94%
-12,Goldman Sachs,NYSE,GS,Financial services,2019-04-02,,6.54%
-13,Home Depot,NYSE,HD,Home Improvement,1999-11-01,,6.23%
-14,Honeywell,NASDAQ,HON,Conglomerate,2020-08-31,AlliedSignal and Honeywell,3.34%
-15,IBM,NYSE,IBM,Information technology,1979-06-29,Also 1932-05-26 to 1939-03-04,3.09%
-16,Intel,NASDAQ,INTC,Semiconductor industry,1999-11-01,,0.72%
-17,Johnson & Johnson,NYSE,JNJ,Pharmaceutical industry,1997-03-17,,2.70%
-18,JPMorgan Chase,NYSE,JPM,Financial services,1991-05-06,,3.07%
-19,McDonald's,NYSE,MCD,Food industry,1985-10-30,,4.98%
-20,Merck,NYSE,MRK,Pharmaceutical industry,1979-06-29,,2.16%
-21,Microsoft,NASDAQ,MSFT,Information technology,1999-11-01,,6.83%
-22,Nike,NYSE,NKE,Clothing industry,2013-09-20,,1.75%
-23,Procter & Gamble,NYSE,PG,Fast-moving consumer goods,1932-05-26,,2.69%
-24,Salesforce,NYSE,CRM,Information technology,2020-08-31,,5.04%
-25,Travelers,NYSE,TRV,Insurance,2009-06-08,,3.69%
-26,UnitedHealth Group,NYSE,UNH,Managed health care,2012-09-24,,8.81%
-27,Verizon,NYSE,VZ,Telecommunications industry,2004-04-08,,0.67%
-28,Visa,NYSE,V,Financial services,2013-09-20,,4.76%
-29,Walmart,NYSE,WMT,Retailing,1997-03-17,,1.00%
+200 SMA % Difference
+18.038132457367258
+17.53070470637538
+9.663423696681345
+19.56841521001206
+14.656915243435472
+-8.6403676582358
+8.729342635114842
+1.0517326771352224
+-4.632962641045831
+7.076920282106168
+0.41058323897445226
+-2.3443806863655405
+17.993548150927484
+2.2463334981081915
+8.288252143379527
+3.2997361135793573
+-20.67293712632546
+-5.1748640571707885
+16.29354136455155
+-7.587112441850702
+5.116002035444957
+14.726545142343175
+-24.78629127358659
+5.843840497410912
+-0.04836007816002254
+2.5646695419124725
+-0.08615700838464704
+7.663313346288671
+-0.43549723323844214
+17.78345695677436
