@@ -1,6 +1,5 @@
 import alpaca_trade_api as tradeapi
 import numpy as np
-import config as conf
 import BTC2hrstrat as strat
 
 
@@ -21,18 +20,18 @@ def execute_trade(order_type, amount):
     try:
         if order_type == 'buy':
             order = strat.api.submit_order(
-                symbol=conf.symbol,
+                symbol=strat.symbol,
                 qty=amount,
                 side='buy',
                 type='market',
                 time_in_force='gtc'
             )
         elif order_type == 'sell':
-            available_balance = get_available_balance(conf.symbol)
+            available_balance = get_available_balance(strat.symbol)
             if available_balance < amount:
                 amount = available_balance
             order = strat.api.submit_order(
-                symbol=conf.symbol,
+                symbol=strat.symbol,
                 qty=amount,
                 side='sell',
                 type='market',
