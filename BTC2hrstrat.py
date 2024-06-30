@@ -10,18 +10,23 @@ from datetime import datetime, timedelta, timezone
 import time as tm
 import sys
 from dotenv import load_dotenv
+import config as conf
+import helperfuncs as hf
 
 load_dotenv()
 api_key = os.getenv('api_key')
 api_secret = os.getenv("api_secret")
+base_url = os.getenv('base_url')
 
+# Parameters
+symbol = 'BTC/USD'  # Change to the cryptocurrency pair you want to use
+timeframe = '1Min'  # 1-minute bars
+vwap_period = 14
+amount = 1    # quanitity to trade
 
-# Import your custom modules
-import config as conf
-import helperfuncs as hf
 
 # Initialize Alpaca API
-api = tradeapi.REST(api_key, api_secret, conf.base_url, api_version='v2')
+api = tradeapi.REST(api_key, api_secret, base_url, api_version='v2')
 
 
 def main():
@@ -32,7 +37,7 @@ def main():
            
             if position is None and (datetime.now(timezone.utc).hour == 21 and datetime.now(timezone.utc).minute == 0):
                 print("It is now 21:00 UTC time, ENTERING BITCOIN POSITION")
-                hf.execute_trade('buy', conf.amount)
+                hf.execute_trade('buy', amount)
                 position = 'long'
             else:
                 pass
