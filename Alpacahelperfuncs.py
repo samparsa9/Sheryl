@@ -13,6 +13,12 @@ def get_available_balance(api, symbol):
         else:
             raise e
 
+def get_market_value(api, symbol):
+    try:
+        market_value = api.get_position(symbol).market_value
+        return market_value
+    except tradeapi.rest.APIError as e:
+        return 0
 
 
 def execute_trade(order_type, amount, symbol, api):

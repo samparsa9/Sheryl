@@ -158,7 +158,7 @@ def cluster_df_setup(starting_cash, stock_df):
     for index, row in cluster_info_df.iterrows():
         # index is the cluster number
         if cluster_info_df.at[index, "Num Stocks"] > 0:
-            cluster_info_df.at[index, "Amount Per Stock"] = cluster_info_df.at[index, "Dollars In Cluster"] / cluster_info_df.at[index, "Num Stocks"]
+            cluster_info_df.at[index, "Amount Per Stock"] = int(cluster_info_df.at[index, "Dollars In Cluster"] / cluster_info_df.at[index, "Num Stocks"])
         else:
             cluster_info_df.at[index, "Amount Per Stock"] = 0  # Avoid division by zero
     
