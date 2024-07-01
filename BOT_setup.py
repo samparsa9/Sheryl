@@ -118,6 +118,7 @@ def cluster_df_setup(starting_cash, stock_df):
     portfolio_amt = starting_cash
 
     cluster_info_df = pd.DataFrame({
+            "Cluster": [0,1,2,3,4],
             "Percentage": [0.2, 0.4, 0.2, 0.1, 0.1], #percentage of allocation for each cluster
             "Dollars In Cluster": [0] * 5,
             "Num Stocks": [0] * 5, #number of stocks in each cluster
@@ -127,28 +128,21 @@ def cluster_df_setup(starting_cash, stock_df):
 
     #set the portfolio amount for each cluster
     cluster_info_df["Dollars In Cluster"] = cluster_info_df["Percentage"] * portfolio_amt
-
+    cluster_info_df.set_index("Cluster", inplace=True)
     #figure out how many stocks are in each cluster, and fill tickers column
     for ticker, row in stock_df.iterrows():
-        if(row["Cluster"] == 0):
-            cluster_info_df.at[0, "Tickers"].append(ticker)
-            cluster_info_df.at[0, "Num Stocks"] += 1 
-        elif(row["Cluster"] == 1):
-            cluster_info_df.at[1, "Tickers"].append(ticker)
-            cluster_info_df.at[1, "Num Stocks"] += 1 
-        elif(row["Cluster"] == 2):
-            cluster_info_df.at[2, "Tickers"].append(ticker)
-            cluster_info_df.at[2, "Num Stocks"] += 1 
-        elif(row["Cluster"] == 3):
-            cluster_info_df.at[3, "Tickers"].append(ticker)
-            cluster_info_df.at[3, "Num Stocks"] += 1 
-        elif(row["Cluster"] == 4):
-            cluster_info_df.at[4, "Tickers"].append(ticker)
-            cluster_info_df.at[4, "Num Stocks"] += 1 
-            
+        cluster = row["Cluster"]
+        # print(stock_df.head())
+        # print(cluster_info_df)
+        cluster_info_df.at[cluster, "Tickers"].append(ticker)
+        cluster_info_df.at[cluster, "Num Stocks"] += 1
+
     for index, row in cluster_info_df.iterrows():
-        #index is cluster num
-        cluster_info_df.at[index, "Amount Per Stock"] = cluster_info_df.at[index, "Dollars In Cluster"] / cluster_info_df.at[index, "Num Stocks"]
+        # index is the cluster number
+        if cluster_info_df.at[index, "Num Stocks"] > 0:
+            cluster_info_df.at[index, "Amount Per Stock"] = cluster_info_df.at[index, "Dollars In Cluster"] / cluster_info_df.at[index, "Num Stocks"]
+        else:
+            cluster_info_df.at[index, "Amount Per Stock"] = 0  # Avoid division by zero
     
     return cluster_info_df
 
@@ -159,6 +153,7 @@ def main():
     stockdf = pd.read_csv('sp500_companies.csv', index_col='Symbol')
     # stockdf = stockdf.drop(columns=["Security", "GICS Sector", "GICS Sub-Industry", "Headquarters Location", "Date added", "CIK", "Founded"])
     stockdf = stockdf.drop(columns=["Cluster"])
+    stockdf = stockdf.dropna()
     tickers = Create_list_of_tickers(stockdf.index)
     Calculate_features(tickers, stockdf)
     scaled_data = Scale_data(stockdf)
