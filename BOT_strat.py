@@ -19,7 +19,6 @@ base_url = os.getenv('base_url')
 api = tradeapi.REST(api_key, api_secret, base_url, api_version='v2')
 
 
-
 def main():
     in_position = False
     
@@ -65,14 +64,18 @@ def main():
     print(df.head())
 
     
-    
     while True:
         try:
             print("----------New Clustering and Allocation Iteration---------")
-            if not in_position:
+            if not in_position and (datetime.now(timezone.utc).hour == 14 and datetime.now(timezone.utc).minute == 00):
                 #need to buy in proportionally to each cluster
-                
-                
+                for index, row in df.iterrows():
+                    stocks_for_this_cluster = df.at[index, "Tickers"]
+                    dollars_per_stock_for_cluster = df.at[index, "Amount Per Stock"]
+                    for stock in stocks_for_this_cluster:
+                        hf.execute_trade("buy", dollars_per_stock_for_cluster, stock, api)
+            if in_position and (datetime.now(timezone.utc).hour == 14 and datetime.now(timezone.utc).minute == 00):
+                return 0
                 
             #print(df)
 

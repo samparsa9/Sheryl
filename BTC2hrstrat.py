@@ -10,7 +10,7 @@ from datetime import datetime, timedelta, timezone
 import time as tm
 import sys
 from dotenv import load_dotenv
-import helperfuncs as hf
+import Sheryl.Alpacahelperfuncs as hf
 
 load_dotenv()
 api_key = os.getenv('api_key')
