@@ -28,6 +28,7 @@ amount = 1    # quanitity to trade
 api = tradeapi.REST(api_key, api_secret, base_url, api_version='v2')
 
 
+
 def main():
     position = None
     while True:
