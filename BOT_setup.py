@@ -116,7 +116,8 @@ def plot_clusters(df):
 def main():
     #get_sp500_csv()
     stockdf = pd.read_csv('Sheryl/sp500_companies.csv', index_col='Symbol')
-    stockdf = stockdf.drop(columns=["Security", "GICS Sector", "GICS Sub-Industry", "Headquarters Location", "Date added", "CIK", "Founded"])
+    # stockdf = stockdf.drop(columns=["Security", "GICS Sector", "GICS Sub-Industry", "Headquarters Location", "Date added", "CIK", "Founded"])
+    stockdf = stockdf.drop(columns=["Cluster"])
     tickers = Create_list_of_tickers(stockdf.index)
     Calculate_features(tickers, stockdf)
     scaled_data = Scale_data(stockdf)
