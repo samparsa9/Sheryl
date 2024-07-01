@@ -6,8 +6,9 @@ from bs4 import BeautifulSoup
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
+import os
 
-def Get_sp500_csv():
+def Create_sp500_csv(file_path):
     # URL of the Wikipedia page
     url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 
@@ -21,11 +22,15 @@ def Get_sp500_csv():
     # Read the table into a DataFrame
     df = pd.read_html(str(table))[0]
 
-    # Display the first few rows of the DataFrame
-    print(df.head())
+    # Getting rid of unnecessary columns and dropping any rows that might have NaN values
+    df = df.drop(columns=["Security", "GICS Sector", "GICS Sub-Industry", "Headquarters Location", "Date added", "CIK", "Founded"])
+    df = df.dropna()
+    
+    # Ensure directory exists
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
     # # Save the DataFrame to a CSV file for reference
-    df.to_csv('sp500_companies.csv', index=False)
+    df.to_csv(file_path, index=False)
     
 
 def Create_list_of_tickers(dfindex):
@@ -36,7 +41,7 @@ def Create_list_of_tickers(dfindex):
     return tickers
 
 
-def Calculate_features(tickers, df):
+def Calculate_features(tickers, df, batch_size=10):
     # Fetch historical data for SP500 
     sp500_data = yf.download('^GSPC', period='1y')
     sp500_data['Market Return'] = sp500_data['Adj Close'].pct_change()
@@ -45,28 +50,34 @@ def Calculate_features(tickers, df):
     df['200 SMA % Difference'] = None
     df['beta value'] = None
 
-    # Fetch historical data and calculate 200 SMA and beta value for each stock
-    for ticker in tickers:
-        ticker_data = yf.download(ticker, period='1y')
-        ticker_data['Return'] = ticker_data['Adj Close'].pct_change()
+    # Processing in batches
+    for i in range(0, len(tickers), batch_size):
+        batch = tickers[i:i + batch_size]
 
-        # Calculate 200-day SMA and percentage difference
-        if len(ticker_data) >= 200:
-            ticker_data['200 SMA'] = ticker_data['Adj Close'].rolling(window=200).mean()
-            latest_close = ticker_data['Adj Close'].iloc[-1]
-            latest_sma = ticker_data['200 SMA'].iloc[-1]
-            if latest_sma != 0:  # Avoid division by zero
-                percent_diff = ((latest_close - latest_sma) / latest_sma) * 100
-                df.at[ticker, '200 SMA % Difference'] = percent_diff
+        # Fetch data for this batch
+        batch_data = yf.download(batch, period='1y', group_by='ticker')
+        
+        for ticker in batch:
+            ticker_data = batch_data[ticker]
+            ticker_data['Return'] = ticker_data['Adj Close'].pct_change()
 
-        # Calculate beta value
-        returns = pd.concat([ticker_data['Return'], sp500_data['Market Return']], axis=1).dropna()
-        if len(returns) > 1:  # Ensure there are enough data points for covariance calculation
-            covariance = np.cov(returns['Return'], returns['Market Return'])[0, 1]
-            sp500_variance = np.var(returns['Market Return'])
-            if sp500_variance != 0:  # Avoid division by zero
-                beta = covariance / sp500_variance
-                df.at[ticker, 'beta value'] = beta
+            # Calculate 200-day SMA and percentage difference
+            if len(ticker_data) >= 200:
+                ticker_data['200 SMA'] = ticker_data['Adj Close'].rolling(window=200).mean()
+                latest_close = ticker_data['Adj Close'].iloc[-1]
+                latest_sma = ticker_data['200 SMA'].iloc[-1]
+                if latest_sma != 0:  # Avoid division by zero
+                    percent_diff = ((latest_close - latest_sma) / latest_sma) * 100
+                    df.at[ticker, '200 SMA % Difference'] = percent_diff
+
+            # Calculate beta value
+            returns = pd.concat([ticker_data['Return'], sp500_data['Market Return']], axis=1).dropna()
+            if len(returns) > 1:  # Ensure there are enough data points for covariance calculation
+                covariance = np.cov(returns['Return'], returns['Market Return'])[0, 1]
+                sp500_variance = np.var(returns['Market Return'])
+                if sp500_variance != 0:  # Avoid division by zero
+                    beta = covariance / sp500_variance
+                    df.at[ticker, 'beta value'] = beta
 
 
 def Scale_data(df):
@@ -79,7 +90,7 @@ def Scale_data(df):
 
 def Apply_K_means(df, scaled_data, num_clusters=5):
     # Apply K-means clustering
-    kmeans = KMeans(n_clusters=num_clusters, random_state=0)
+    kmeans = KMeans(n_clusters=num_clusters, random_state=0, n_init=10)
     clusters = kmeans.fit_predict(scaled_data)
     # Initialize the Cluster column with NaN
     df['Cluster'] = np.nan
@@ -87,14 +98,17 @@ def Apply_K_means(df, scaled_data, num_clusters=5):
     df.loc[df[['200 SMA % Difference', 'beta value']].dropna().index, 'Cluster'] = clusters
 
 
-def Sort_and_save(df):
+def Sort_and_save(df,file_path):
     # Sort DataFrame by Cluster
     df = df.sort_values(by='Cluster')
 
-    # Save the updated DataFrame to a CSV file
-    df.to_csv('sp500_companies.csv', index=True)
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
-def Save(df):
+    # Save the updated DataFrame to a CSV file
+    df.to_csv(file_path, index=False)
+
+def Save_cluster_df(df):
     df.to_csv('cluster_info.csv', index=True)
 
 
@@ -131,6 +145,10 @@ def cluster_df_setup(starting_cash, stock_df):
     cluster_info_df.set_index("Cluster", inplace=True)
     #figure out how many stocks are in each cluster, and fill tickers column
     for ticker, row in stock_df.iterrows():
+        # print("----------------------------------------------------------------------------")
+        # print(ticker)
+        # print(row)
+        # print("----------------------------------------------------------------------------")
         cluster = row["Cluster"]
         # print(stock_df.head())
         # print(cluster_info_df)
@@ -149,18 +167,16 @@ def cluster_df_setup(starting_cash, stock_df):
 
 
 def main():
-    #get_sp500_csv()
-    stockdf = pd.read_csv('sp500_companies.csv', index_col='Symbol')
-    # stockdf = stockdf.drop(columns=["Security", "GICS Sector", "GICS Sub-Industry", "Headquarters Location", "Date added", "CIK", "Founded"])
-    stockdf = stockdf.drop(columns=["Cluster"])
-    stockdf = stockdf.dropna()
+    location_of_sp500_csv_file = 'Sheryl/sp500_companies.csv'
+    Create_sp500_csv(location_of_sp500_csv_file)
+    stockdf = pd.read_csv(location_of_sp500_csv_file, index_col='Symbol')
     tickers = Create_list_of_tickers(stockdf.index)
     Calculate_features(tickers, stockdf)
+    stockdf = stockdf.dropna()
     scaled_data = Scale_data(stockdf)
     Apply_K_means(stockdf, scaled_data)
-    Sort_and_save(stockdf)
+    Sort_and_save(stockdf, location_of_sp500_csv_file)
     cluster_df = cluster_df_setup(1000000, stockdf)
-    print(cluster_df.head())
     # Plot the clusters
     plot_clusters(stockdf)
 

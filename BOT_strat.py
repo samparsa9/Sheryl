@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 import time as tm
 import sys
 from dotenv import load_dotenv
-import Sheryl.Alpacahelperfuncs as hf
+import Alpacahelperfuncs as hf
 import pandas as pd
 import BOT_setup as setup
 
@@ -22,20 +22,21 @@ api = tradeapi.REST(api_key, api_secret, base_url, api_version='v2')
 def main():
     in_position = False
 
-    stockdf = pd.read_csv('sp500_companies.csv', index_col='Symbol')
-    # stockdf = stockdf.drop(columns=["Security", "GICS Sector", "GICS Sub-Industry", "Headquarters Location", "Date added", "CIK", "Founded"])
-    stockdf = stockdf.drop(columns=["Cluster"])
-    stockdf = stockdf.dropna()
+    location_of_sp500_csv_file = 'Sheryl/sp500_companies.csv'
+    setup.Create_sp500_csv(location_of_sp500_csv_file)
+    stockdf = pd.read_csv('Sheryl/sp500_companies.csv', index_col='Symbol')
     tickers = setup.Create_list_of_tickers(stockdf.index)
     setup.Calculate_features(tickers, stockdf)
+    stockdf = stockdf.dropna()
     scaled_data = setup.Scale_data(stockdf)
     setup.Apply_K_means(stockdf, scaled_data)
-    setup.Sort_and_save(stockdf)
+    setup.Sort_and_save(stockdf, location_of_sp500_csv_file)
     cluster_df = setup.cluster_df_setup(1000000, stockdf)
+    setup.plot_clusters(stockdf)
     
 
 
-    while True:
+    while not True: # FOR DEBUGGING SET BACK TO TRUE
         try:
             print("----------New Clustering and Allocation Iteration---------")
             if not in_position and (datetime.now(timezone.utc).hour == 14 and datetime.now(timezone.utc).minute == 00):
