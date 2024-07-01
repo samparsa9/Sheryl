@@ -94,6 +94,8 @@ def Sort_and_save(df):
     # Save the updated DataFrame to a CSV file
     df.to_csv('sp500_companies.csv', index=True)
 
+def Save(df):
+    df.to_csv('cluster_info.csv', index=True)
 
 
 def plot_clusters(df):
@@ -112,10 +114,49 @@ def plot_clusters(df):
     plt.grid(True)
     plt.show()
 
+def cluster_df_setup(starting_cash, stock_df):
+    portfolio_amt = starting_cash
+
+    cluster_info_df = pd.DataFrame({
+            "Percentage": [0.2, 0.4, 0.2, 0.1, 0.1], #percentage of allocation for each cluster
+            "Dollars In Cluster": [0] * 5,
+            "Num Stocks": [0] * 5, #number of stocks in each cluster
+            "Amount Per Stock": [0] * 5,
+            "Tickers": [[], [], [], [], []] #list of tickers for each cluster
+        })
+
+    #set the portfolio amount for each cluster
+    cluster_info_df["Dollars In Cluster"] = cluster_info_df["Percentage"] * portfolio_amt
+
+    #figure out how many stocks are in each cluster, and fill tickers column
+    for ticker, row in stock_df.iterrows():
+        if(row["Cluster"] == 0):
+            cluster_info_df.at[0, "Tickers"].append(ticker)
+            cluster_info_df.at[0, "Num Stocks"] += 1 
+        elif(row["Cluster"] == 1):
+            cluster_info_df.at[1, "Tickers"].append(ticker)
+            cluster_info_df.at[1, "Num Stocks"] += 1 
+        elif(row["Cluster"] == 2):
+            cluster_info_df.at[2, "Tickers"].append(ticker)
+            cluster_info_df.at[2, "Num Stocks"] += 1 
+        elif(row["Cluster"] == 3):
+            cluster_info_df.at[3, "Tickers"].append(ticker)
+            cluster_info_df.at[3, "Num Stocks"] += 1 
+        elif(row["Cluster"] == 4):
+            cluster_info_df.at[4, "Tickers"].append(ticker)
+            cluster_info_df.at[4, "Num Stocks"] += 1 
+            
+    for index, row in cluster_info_df.iterrows():
+        #index is cluster num
+        cluster_info_df.at[index, "Amount Per Stock"] = cluster_info_df.at[index, "Dollars In Cluster"] / cluster_info_df.at[index, "Num Stocks"]
+    
+    return cluster_info_df
+
+
 
 def main():
     #get_sp500_csv()
-    stockdf = pd.read_csv('Sheryl/sp500_companies.csv', index_col='Symbol')
+    stockdf = pd.read_csv('sp500_companies.csv', index_col='Symbol')
     # stockdf = stockdf.drop(columns=["Security", "GICS Sector", "GICS Sub-Industry", "Headquarters Location", "Date added", "CIK", "Founded"])
     stockdf = stockdf.drop(columns=["Cluster"])
     tickers = Create_list_of_tickers(stockdf.index)
@@ -123,6 +164,8 @@ def main():
     scaled_data = Scale_data(stockdf)
     Apply_K_means(stockdf, scaled_data)
     Sort_and_save(stockdf)
+    cluster_df = cluster_df_setup(1000000, stockdf)
+    print(cluster_df.head())
     # Plot the clusters
     plot_clusters(stockdf)
 
