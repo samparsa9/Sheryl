@@ -7,6 +7,7 @@ from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import os
+import Alpacahelperfuncs as hf
 
 def Create_sp500_csv(file_path):
     # URL of the Wikipedia page
@@ -140,7 +141,7 @@ def cluster_df_setup(starting_cash, stock_df):
             "Tickers": [[], [], [], [], []] #list of tickers for each cluster
         })
 
-    #set the portfolio amount for each cluster
+    # Set the portfolio amount for each cluster
     cluster_info_df["Dollars In Cluster"] = cluster_info_df["Percentage"] * portfolio_amt
     cluster_info_df.set_index("Cluster", inplace=True)
     #figure out how many stocks are in each cluster, and fill tickers column
@@ -164,7 +165,65 @@ def cluster_df_setup(starting_cash, stock_df):
     
     return cluster_info_df
 
+def Get_current_portfolio_allocation(optimal_portfolio_allocation_df, api):
+    # Create a new dataframe that represents our current portfolios dollar allocation each clusters
+    current_portfolio_allocation = pd.DataFrame({
+            "Cluster": [0,1,2,3,4],
+            "Dollars In Cluster": [0] * 5,
+        })
+    current_portfolio_allocation.set_index("Cluster", inplace=True)
+    # This for loop will be used to calulate the total dollars in each cluster by looping through each ticker in each cluster
+    # Snd adding the market value of our position in that ticker to a running sum
+    for cluster in optimal_portfolio_allocation_df.index:
+        dollars_in_this_cluster = 0
+        for ticker in optimal_portfolio_allocation_df.at[cluster, "Tickers"]:
+            dollars_in_this_cluster += hf.get_market_value(api, ticker)
+        # Populating the Dollars In Cluster column with these new values in our current portfolio allocation df
+        current_portfolio_allocation.at[cluster, "Dollars In Cluster"] = dollars_in_this_cluster
+    return current_portfolio_allocation
 
+
+def Get_most_unoptimized_clusters(optimal_portfolio_allocation_df, current_portfolio_allocation, api):
+    """
+    This function will take in the cluster information dataframe and the api,
+    it will then see if the portfolio is balanced correctly depending on the cluster allocations,
+    if it is not, it will return the two clusters off by the most percentage
+    """
+    
+    # Initializing variables to represent the highest unoptimal cluster and how much higher than optimal it is
+    # And the lowest unoptimal cluster and how much lower than optimal it is
+    Highest_unoptimal_allocation_pct = -float('inf')
+    Lowest_unoptimal_allocation_pct = float('inf')
+    Highest_unoptimal_allocation_cluster = 0
+    Lowest_unoptimal_allocation_cluster = 0
+
+    # For every cluster, we will see how many dollars we have allocated currently and how many we should have
+    for index, row in optimal_portfolio_allocation_df.iterrows():
+        # Retreiving and storing this clusters current dollar allocation
+        current_dollar_allocation = current_portfolio_allocation.at[index, "Dollars In Cluster"]
+        # Retreiving and storing this clusters optimal dollar allocation
+        optimal_dollar_allocation = optimal_portfolio_allocation_df.at[index, "Dollars In Cluster"]
+
+        # Avoiding division by 0
+        if optimal_dollar_allocation != 0:
+            # Storing the % diff higher or lower than optimal the current allocation is
+            pct_diff_between_current_and_optimal_allocation = (current_dollar_allocation / optimal_dollar_allocation) - 1
+
+            # If the % diff is higher than the current highest unoptimal allocation, set it to this new % diff and update which cluster
+            if pct_diff_between_current_and_optimal_allocation > Highest_unoptimal_allocation_pct:
+                Highest_unoptimal_allocation_pct = pct_diff_between_current_and_optimal_allocation
+                Highest_unoptimal_allocation_cluster = index
+            # If the % diff is lower than the current lowest unoptimal allocation, set it to this new % diff and update which cluster
+            elif pct_diff_between_current_and_optimal_allocation < Lowest_unoptimal_allocation_pct:
+                Lowest_unoptimal_allocation_pct = pct_diff_between_current_and_optimal_allocation
+                Lowest_unoptimal_allocation_cluster = index
+
+    # Returning the values as a tuple of tuples
+    tuple_to_return = ((Highest_unoptimal_allocation_cluster, Highest_unoptimal_allocation_pct), (Lowest_unoptimal_allocation_cluster, Lowest_unoptimal_allocation_pct))
+    return tuple_to_return
+
+def Is_balanced(H_pct, L_pct):
+    return abs(H_pct) < 0.03 and abs(L_pct) < 0.03
 
 def main():
     location_of_sp500_csv_file = 'Sheryl/sp500_companies.csv'
