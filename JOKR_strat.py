@@ -10,9 +10,11 @@ import pandas as pd
 import JOKR_setup as setup
 
 load_dotenv()
+# Alpaca Info
 api_key = os.getenv('api_key')
 api_secret = os.getenv("api_secret")
 base_url = os.getenv('base_url')
+
 
 # Initialize Alpaca API
 api = tradeapi.REST(api_key, api_secret, base_url, api_version='v2')
@@ -87,7 +89,8 @@ def main():
                             # Buy the specified amount of that stock
                             hf.execute_trade("buy", dollars_per_stock_for_cluster, stock, api)
                     in_position = True
-                if in_position:
+                    setup.send_email("Entered Initial Positions", " ")
+                if in_position and not setup.Is_balanced(H_unop_alloc_pct, L_unop_alloc_pct):
                     while not setup.Is_balanced(H_unop_alloc_pct, L_unop_alloc_pct):
                         # buy random tickers in L_unop_alloc_cluster and sell random tickers in H_unop_alloc_cluster
                         lowest_market_value = float('inf')
@@ -110,6 +113,9 @@ def main():
                                 ticker_to_sell = tickers
                         if ticker_to_sell:
                             hf.execute_trade("sell", highest_market_value, ticker_to_sell, api)
+                    setup.send_email('Portfolio Rebalancing Complete', ' ')
+                else:
+                    setup.send_email('Portfolio is Still Balanced', ' ')
 
             def calculate_seconds_till_next_reallocation():
                 now = datetime.now(timezone.utc)

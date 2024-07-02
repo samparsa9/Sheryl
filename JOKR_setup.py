@@ -8,6 +8,38 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import os
 import Alpacahelperfuncs as hf
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from dotenv import load_dotenv
+
+
+load_dotenv()
+# Email Feature info
+sender = os.getenv('sender')
+recipient = os.getenv('sender')
+password = os.getenv('email_password')
+
+def send_email(subject, message):
+
+    msg = MIMEMultipart()
+    msg['From'] = sender
+    msg['To'] = recipient
+    msg['Subject'] = subject
+
+    msg.attach(MIMEText(message, 'plain'))
+
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender, password)
+        text = msg.as_string()
+        server.sendmail(sender, recipient, text)
+        server.quit()
+        print('Email sent')
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+
 
 def Create_sp500_csv(file_path):
     # URL of the Wikipedia page
@@ -226,18 +258,19 @@ def Is_balanced(H_pct, L_pct):
     return abs(H_pct) < 0.03 and abs(L_pct) < 0.03
 
 def main():
-    location_of_sp500_csv_file = 'Sheryl/sp500_companies.csv'
-    Create_sp500_csv(location_of_sp500_csv_file)
-    stockdf = pd.read_csv(location_of_sp500_csv_file, index_col='Symbol')
-    tickers = Create_list_of_tickers(stockdf.index)
-    Calculate_features(tickers, stockdf)
-    stockdf = stockdf.dropna()
-    scaled_data = Scale_data(stockdf)
-    Apply_K_means(stockdf, scaled_data)
-    Sort_and_save(stockdf, location_of_sp500_csv_file)
-    cluster_df = cluster_df_setup(1000000, stockdf)
-    # Plot the clusters
-    plot_clusters(stockdf)
+    # location_of_sp500_csv_file = 'Sheryl/sp500_companies.csv'
+    # Create_sp500_csv(location_of_sp500_csv_file)
+    # stockdf = pd.read_csv(location_of_sp500_csv_file, index_col='Symbol')
+    # tickers = Create_list_of_tickers(stockdf.index)
+    # Calculate_features(tickers, stockdf)
+    # stockdf = stockdf.dropna()
+    # scaled_data = Scale_data(stockdf)
+    # Apply_K_means(stockdf, scaled_data)
+    # Sort_and_save(stockdf, location_of_sp500_csv_file)
+    # cluster_df = cluster_df_setup(1000000, stockdf)
+    # # Plot the clusters
+    # plot_clusters(stockdf)
+    send_email("Trade Executed", "A trade has been executed successfully.")
 
 if __name__ == "__main__":
     main()
