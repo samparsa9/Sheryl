@@ -101,7 +101,7 @@ def Calculate_features(tickers, df, batch_size=10):
                 latest_sma = ticker_data['200 SMA'].iloc[-1]
                 if latest_sma != 0:  # Avoid division by zero
                     percent_diff = ((latest_close - latest_sma) / latest_sma) * 100
-                    df.at[ticker, '200 SMA % Difference'] = percent_diff
+                    df.loc[ticker, '200 SMA % Difference'] = percent_diff
 
             # Calculate beta value
             returns = pd.concat([ticker_data['Return'], sp500_data['Market Return']], axis=1).dropna()
@@ -110,7 +110,7 @@ def Calculate_features(tickers, df, batch_size=10):
                 sp500_variance = np.var(returns['Market Return'])
                 if sp500_variance != 0:  # Avoid division by zero
                     beta = covariance / sp500_variance
-                    df.at[ticker, 'beta value'] = beta
+                    df.loc[ticker, 'beta value'] = beta
 
 
 def Scale_data(df):
@@ -139,10 +139,17 @@ def Sort_and_save(df,file_path):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
     # Save the updated DataFrame to a CSV file
-    df.to_csv(file_path, index=False)
+    df.to_csv(file_path, index=True)
 
-def Save_cluster_df(df):
-    df.to_csv('cluster_info.csv', index=True)
+
+def Save_cluster_df(df, file_path):
+    # Sort DataFrame by Cluster
+    df = df.sort_values(by='Cluster')
+
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    df.to_csv(file_path, index=True)
 
 
 def plot_clusters(df):
@@ -240,7 +247,7 @@ def Get_most_unoptimized_clusters(optimal_portfolio_allocation_df, current_portf
         if optimal_dollar_allocation != 0:
             # Storing the % diff higher or lower than optimal the current allocation is
             pct_diff_between_current_and_optimal_allocation = (current_dollar_allocation / optimal_dollar_allocation) - 1
-
+            print(f'pct_diff_between_current_and_optimal_allocation: {pct_diff_between_current_and_optimal_allocation}\ncurrent_dollar_allocation: {current_dollar_allocation}\noptimal_dollar_allocation: {optimal_dollar_allocation}')
             # If the % diff is higher than the current highest unoptimal allocation, set it to this new % diff and update which cluster
             if pct_diff_between_current_and_optimal_allocation > Highest_unoptimal_allocation_pct:
                 Highest_unoptimal_allocation_pct = pct_diff_between_current_and_optimal_allocation
@@ -254,8 +261,11 @@ def Get_most_unoptimized_clusters(optimal_portfolio_allocation_df, current_portf
     tuple_to_return = ((Highest_unoptimal_allocation_cluster, Highest_unoptimal_allocation_pct), (Lowest_unoptimal_allocation_cluster, Lowest_unoptimal_allocation_pct))
     return tuple_to_return
 
-def Is_balanced(H_pct, L_pct):
-    return abs(H_pct) < 0.03 and abs(L_pct) < 0.03
+def Is_balanced(optimal_portfolio_df, current_portfolio_df, api):
+    unoptimized_clusters = Get_most_unoptimized_clusters(optimal_portfolio_df, current_portfolio_df, api)
+    H_unop_alloc_pct = unoptimized_clusters[0][1]
+    L_unop_alloc_pct = unoptimized_clusters[1][1]
+    return float(abs(H_unop_alloc_pct)) < 0.03 and float(abs(L_unop_alloc_pct) < 0.03)
 
 def main():
     # location_of_sp500_csv_file = 'Sheryl/sp500_companies.csv'

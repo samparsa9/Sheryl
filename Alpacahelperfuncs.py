@@ -30,28 +30,25 @@ def in_position(api):
         print("Error fetching positions: {e}")
         return []
     
-
-def execute_trade(order_type, amount, symbol, api):
+def execute_trade(action, amount, symbol, api, notional=False):
     try:
-        if order_type == 'buy':
+        if notional:
             order = api.submit_order(
-                symbol=symbol,
-                qty=amount,
-                side='buy',
+                symbol=str(symbol),
+                notional=float(amount),
+                side=action,
+                type='market',
+                time_in_force='day'
+            )
+        else:
+            order = api.submit_order(
+                symbol=str(symbol),
+                qty=int(amount),
+                side=action,
                 type='market',
                 time_in_force='gtc'
             )
-        elif order_type == 'sell':
-            available_balance = get_available_balance(symbol)
-            if available_balance < amount:
-                amount = available_balance
-            order = api.submit_order(
-                symbol=symbol,
-                qty=amount,
-                side='sell',
-                type='market',
-                time_in_force='gtc'
-            )
-        print(f"Successfully Executed {order_type} for ",amount, " Bitcoin") # order: {order} <- include if you want all the order data as well
+        print(f"Successfully Executed {action} for {amount} of {symbol}")
+        return order
     except Exception as e:
-        print(f"Error executing {order_type} order: {e}")
+        print(f"Error executing {action} order: {e}")
