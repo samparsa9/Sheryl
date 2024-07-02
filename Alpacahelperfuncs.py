@@ -2,7 +2,6 @@ import alpaca_trade_api as tradeapi
 import numpy as np
 
 
-
 def get_available_balance(api, symbol):
     try:
         position = api.get_position(symbol)
@@ -20,6 +19,17 @@ def get_market_value(api, symbol):
     except tradeapi.rest.APIError as e:
         return 0
 
+def in_position(api):
+    try:
+        positions = api.list_positions()
+        if positions == []:
+            return False
+        else:
+            return True
+    except tradeapi.rest.APIError as e:
+        print("Error fetching positions: {e}")
+        return []
+    
 
 def execute_trade(order_type, amount, symbol, api):
     try:
