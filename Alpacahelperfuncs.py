@@ -2,6 +2,7 @@ import alpaca_trade_api as tradeapi
 import numpy as np
 import os
 from dotenv import load_dotenv
+import JOKR_strat as js
 
 # load_dotenv()
 # # Alpaca Info
@@ -55,6 +56,7 @@ def execute_trade(action, amount, symbol, api, notional=False, crypto=False):
                 time_in_force='day'
             )
         elif notional and crypto == True:
+            print(f"trade amount is {amount}")
             # symbol = symbol.replace("-", "") # added this line
             order = api.submit_order(
                 symbol=str(symbol),

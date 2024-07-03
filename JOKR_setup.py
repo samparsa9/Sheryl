@@ -70,8 +70,8 @@ def Create_sp500_csv(file_path):
 def create_crypto_csv(file_path):
 
     crypto_df = pd.DataFrame({
-            "Symbol": ["AAVE/USD","AVAX/USD","BAT/USD","BCH/USD","BTC/USD","CRV/USD","DOGE/USD","DOT/USD","ETH/USD","GRT/USD","LINK/USD","LTC/USD","MKR/USD","SHIB/USD","SUSHI/USD","UNI/USD","USDC/USD","USDT/USD","XTZ/USD"]
-        })
+            "Symbol": ["AAVE/USD","AVAX/USD","BAT/USD","BCH/USD","BTC/USD","CRV/USD","DOGE/USD","DOT/USD","ETH/USD","LINK/USD","LTC/USD","MKR/USD","SHIB/USD","SUSHI/USD","UNI/USD","USDC/USD","USDT/USD","XTZ/USD"]
+        })# "GRT/USD"
     
     # Ensure the directory exists
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -89,47 +89,91 @@ def Create_list_of_tickers(dfindex):
     return tickers
 
 
+# def Calculate_features(tickers, df, batch_size=10, crypto=False):
+#     # Fetch historical data for SP500 
+#     sp500_data = yf.download('^GSPC', period='1y')
+#     sp500_data['Market Return'] = sp500_data['Adj Close'].pct_change()
+
+#     # Initialize columns for 200 SMA % Difference and beta value
+#     df['200 SMA % Difference'] = None
+#     df['beta value'] = None
+
+#     # Processing in batches
+#     for i in range(0, len(tickers), batch_size):
+#         batch = tickers[i:i + batch_size]
+#         # Replace "-" with "/" in each string in the batch list
+#         if crypto == True:
+#             batch = [ticker.replace("/", "-") for ticker in batch]
+
+#         # Fetch data for this batch
+#         batch_data = yf.download(batch, period='1y', group_by='ticker')
+
+
+#         for ticker in batch:
+#             ticker_data = batch_data[ticker]
+#             ticker_data.loc[:,'Return'] = ticker_data.loc[:,'Adj Close'].pct_change()
+
+#             # Calculate 200-day SMA and percentage difference
+#             if len(ticker_data) >= 200:
+#                 ticker_data.loc[:, '200 SMA'] = ticker_data.loc[:, 'Adj Close'].rolling(window=200).mean()
+#                 latest_close = ticker_data['Adj Close'].iloc[-1]
+#                 latest_sma = ticker_data['200 SMA'].iloc[-1]
+#                 if latest_sma != 0:  # Avoid division by zero
+#                     percent_diff = ((latest_close - latest_sma) / latest_sma) * 100
+#                     df.loc[ticker, '200 SMA % Difference'] = percent_diff
+
+#             # Calculate beta value
+#             returns = pd.concat([ticker_data['Return'], sp500_data['Market Return']], axis=1).dropna()
+#             if len(returns) > 1:  # Ensure there are enough data points for covariance calculation
+#                 covariance = np.cov(returns['Return'], returns['Market Return'])[0, 1]
+#                 sp500_variance = np.var(returns['Market Return'])
+#                 if sp500_variance != 0:  # Avoid division by zero
+#                     beta = covariance / sp500_variance
+#                     df.loc[ticker, 'beta value'] = beta
 def Calculate_features(tickers, df, batch_size=10, crypto=False):
     # Fetch historical data for SP500 
     sp500_data = yf.download('^GSPC', period='1y')
     sp500_data['Market Return'] = sp500_data['Adj Close'].pct_change()
 
     # Initialize columns for 200 SMA % Difference and beta value
-    df['200 SMA % Difference'] = None
-    df['beta value'] = None
+    df['200 SMA % Difference'] = np.nan
+    df['beta value'] = np.nan
 
     # Processing in batches
     for i in range(0, len(tickers), batch_size):
         batch = tickers[i:i + batch_size]
         # Replace "-" with "/" in each string in the batch list
-        if crypto == True:
+        if crypto:
             batch = [ticker.replace("/", "-") for ticker in batch]
 
         # Fetch data for this batch
         batch_data = yf.download(batch, period='1y', group_by='ticker')
 
-
         for ticker in batch:
             ticker_data = batch_data[ticker]
-            ticker_data['Return'] = ticker_data['Adj Close'].pct_change()
+            if isinstance(ticker_data, pd.DataFrame):
+                ticker_data = ticker_data.copy()  # Make a copy to avoid the warning
 
-            # Calculate 200-day SMA and percentage difference
-            if len(ticker_data) >= 200:
-                ticker_data['200 SMA'] = ticker_data['Adj Close'].rolling(window=200).mean()
-                latest_close = ticker_data['Adj Close'].iloc[-1]
-                latest_sma = ticker_data['200 SMA'].iloc[-1]
-                if latest_sma != 0:  # Avoid division by zero
-                    percent_diff = ((latest_close - latest_sma) / latest_sma) * 100
-                    df.loc[ticker, '200 SMA % Difference'] = percent_diff
+                # Calculate returns
+                ticker_data['Return'] = ticker_data['Adj Close'].pct_change()
 
-            # Calculate beta value
-            returns = pd.concat([ticker_data['Return'], sp500_data['Market Return']], axis=1).dropna()
-            if len(returns) > 1:  # Ensure there are enough data points for covariance calculation
-                covariance = np.cov(returns['Return'], returns['Market Return'])[0, 1]
-                sp500_variance = np.var(returns['Market Return'])
-                if sp500_variance != 0:  # Avoid division by zero
-                    beta = covariance / sp500_variance
-                    df.loc[ticker, 'beta value'] = beta
+                # Calculate 200-day SMA and percentage difference
+                if len(ticker_data) >= 200:
+                    ticker_data['200 SMA'] = ticker_data['Adj Close'].rolling(window=200).mean()
+                    latest_close = ticker_data['Adj Close'].iloc[-1]
+                    latest_sma = ticker_data['200 SMA'].iloc[-1]
+                    if latest_sma != 0:  # Avoid division by zero
+                        percent_diff = ((latest_close - latest_sma) / latest_sma) * 100
+                        df.at[ticker, '200 SMA % Difference'] = percent_diff
+
+                # Calculate beta value
+                returns = pd.concat([ticker_data['Return'], sp500_data['Market Return']], axis=1).dropna()
+                if len(returns) > 1:  # Ensure there are enough data points for covariance calculation
+                    covariance = np.cov(returns['Return'], returns['Market Return'])[0, 1]
+                    sp500_variance = np.var(returns['Market Return'])
+                    if sp500_variance != 0:  # Avoid division by zero
+                        beta = covariance / sp500_variance
+                        df.at[ticker, 'beta value'] = beta
 
 
 def Scale_data(df):
@@ -196,12 +240,12 @@ def cluster_df_setup(starting_cash, stock_df):
             "Cluster": [0,1,2,3],
             #"Percentage": [0.2, 0.4, 0.2, 0.1, 0.1], #percentage of allocation for each cluster
             "Percentage": [0.2, 0.4, 0.2, 0.2],
-            #"Dollars In Cluster": [0] * 5,
-            "Dollars In Cluster": [0] * 4,
-            #"Num Stocks": [0] * 5, #number of stocks in each cluster
-            "Num Stocks": [0] * 4,
-            #"Amount Per Stock": [0] * 5,
-            "Amount Per Stock": [0] * 4,
+            #"Dollars In Cluster": [0.0] * 5.0,
+            "Dollars In Cluster": [0.0] * 4,
+            #"Num Stocks": [0.0] * 5, #number of stocks in each cluster
+            "Num Stocks": [0.0] * 4,
+            #"Amount Per Stock": [0.0] * 5,
+            "Amount Per Stock": [0.0] * 4,
             #"Tickers": [[], [], [], [], []] #list of tickers for each cluster
             "Tickers": [[], [], [], []]
         })
@@ -218,15 +262,15 @@ def cluster_df_setup(starting_cash, stock_df):
         cluster = row["Cluster"]
         # print(stock_df.head())
         # print(cluster_info_df)
-        cluster_info_df.at[cluster, "Tickers"].append(ticker)
-        cluster_info_df.at[cluster, "Num Stocks"] += 1
+        cluster_info_df.loc[cluster, "Tickers"].append(ticker)
+        cluster_info_df.loc[cluster, "Num Stocks"] += 1
 
     for index, row in cluster_info_df.iterrows():
         # index is the cluster number
-        if cluster_info_df.at[index, "Num Stocks"] > 0:
-            cluster_info_df.at[index, "Amount Per Stock"] = round((cluster_info_df.at[index, "Dollars In Cluster"] / cluster_info_df.at[index, "Num Stocks"]), 2)
+        if cluster_info_df.loc[index, "Num Stocks"] > 0:
+            cluster_info_df.loc[index, "Amount Per Stock"] = round((cluster_info_df.loc[index, "Dollars In Cluster"] / cluster_info_df.loc[index, "Num Stocks"]), 2)
         else:
-            cluster_info_df.at[index, "Amount Per Stock"] = 0  # Avoid division by zero
+            cluster_info_df.loc[index, "Amount Per Stock"] = 0  # Avoid division by zero
     
     return cluster_info_df
 
@@ -235,34 +279,34 @@ def Get_current_portfolio_allocation(optimal_portfolio_allocation_df, api, crypt
     current_portfolio_allocation = pd.DataFrame({
             #"Cluster": [0,1,2,3,4],
             "Cluster": [0,1,2,3],
-            "Current Pct Allocation": [0] * 4,
-            "Pct Off From Optimal": [0] * 4,
+            "Current Pct Allocation": [0.0] * 4,
+            "Pct Off From Optimal": [0.0] * 4,
             #"Dollars In Cluster": [0] * 5,
-            "Dollars In Cluster": [0] * 4
+            "Dollars In Cluster": [0.0] * 4
         })
     current_portfolio_allocation.set_index("Cluster", inplace=True)
     # This for loop will be used to calulate the total dollars in each cluster by looping through each ticker in each cluster
     # Snd adding the market value of our position in that ticker to a running sum
     for cluster in optimal_portfolio_allocation_df.index:
-        dollars_in_this_cluster = 0
-        tickers = optimal_portfolio_allocation_df.at[cluster, "Tickers"]
+        dollars_in_this_cluster = 0.0
+        tickers = optimal_portfolio_allocation_df.loc[cluster, "Tickers"]
         for ticker in tickers:
             #print("here is the ticker before its sent to the func: " + ticker)
             market_value = hf.get_market_value(api, ticker, crypto)
             # print(f"Ticker: {ticker}, Market Value: {market_value}")
             dollars_in_this_cluster += market_value
         # Populating the Dollars In Cluster column with these new values in our current portfolio allocation df
-        current_portfolio_allocation.at[cluster, "Dollars In Cluster"] = dollars_in_this_cluster
+        current_portfolio_allocation.loc[cluster, "Dollars In Cluster"] = round(dollars_in_this_cluster, 2)
         # print(f"Cluster {cluster}, Dollars In Cluster: {dollars_in_this_cluster}")
     for cluster in optimal_portfolio_allocation_df.index:
         dollars_in_this_cluster = current_portfolio_allocation.loc[cluster, 'Dollars In Cluster']
         account_value = hf.get_total_account_value(api)
 
         current_cluster_pct_allocation = (dollars_in_this_cluster / account_value)
-        optimal_cluster_pct_allocation = optimal_portfolio_allocation_df.at[cluster, "Percentage"]
+        optimal_cluster_pct_allocation = optimal_portfolio_allocation_df.loc[cluster, "Percentage"]
 
-        current_portfolio_allocation.at[cluster, "Current Pct Allocation"] = current_cluster_pct_allocation
-        current_portfolio_allocation.at[cluster, "Pct Off From Optimal"] = current_cluster_pct_allocation - optimal_cluster_pct_allocation
+        current_portfolio_allocation.loc[cluster, "Current Pct Allocation"] = current_cluster_pct_allocation
+        current_portfolio_allocation.loc[cluster, "Pct Off From Optimal"] = current_cluster_pct_allocation - optimal_cluster_pct_allocation
 
     return current_portfolio_allocation
 
@@ -304,9 +348,9 @@ def Get_most_unoptimized_clusters(optimal_portfolio_allocation_df, current_portf
     # For every cluster, compare current to optimal percent
     for index, row in optimal_portfolio_allocation_df.iterrows():
         # Retreiving and storing this clusters current dollar allocation
-        current_pct_allocation = current_portfolio_allocation.at[index, "Current Pct Allocation"]
+        current_pct_allocation = current_portfolio_allocation.loc[index, "Current Pct Allocation"]
         # Retreiving and storing this clusters optimal dollar allocation
-        optimal_pct_allocation = optimal_portfolio_allocation_df.at[index, "Percentage"]
+        optimal_pct_allocation = optimal_portfolio_allocation_df.loc[index, "Percentage"]
 
 
         # Storing the % diff higher or lower than optimal the current allocation is

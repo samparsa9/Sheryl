@@ -35,7 +35,10 @@ def main():
     minute_to_trade = int(now.minute) # SET BACK
 
     # Location of our main info dataframe
-    location_of_csv_file = 'Sheryl/crypto_data.csv' #Change this to change what symbol we are looking at
+    location_of_main_csv_file = 'Sheryl/crypto_data.csv' #Change this to change what symbol we are looking at
+
+    # Location of our cluster info dataframe
+    location_of_cluster_csv_file = 'Sheryl/sp500_cluster_info'
 
     # SET BACK TO 5
     num_clusters = 4 # Use this to specify how many cluster for K-means
@@ -53,10 +56,10 @@ def main():
                 in_position = hf.in_position(api)
 
                 # Running wikapedia scraper to populate initial sp500 csv with ticker symbols of sp500 companies
-                setup.create_crypto_csv(location_of_csv_file) #CHANGE THIS BACK FOR SP500
+                setup.create_crypto_csv(location_of_main_csv_file) #CHANGE THIS BACK FOR SP500
 
                 # Setting our stockdf to be the csv file we just created
-                og_df = pd.read_csv(location_of_csv_file, index_col='Symbol')
+                og_df = pd.read_csv(location_of_main_csv_file, index_col='Symbol')
 
                 # Creating our tickers list which we will pass into the Calculate_features function
                 tickers = setup.Create_list_of_tickers(og_df.index)
@@ -74,7 +77,7 @@ def main():
                 setup.Apply_K_means(og_df, scaled_data, num_clusters)
 
                 # Soring the data frame based on cluster value and saving these values to the dataframe, and then updating the csv
-                setup.Sort_and_save(og_df, location_of_csv_file)
+                setup.Sort_and_save(og_df, location_of_main_csv_file)
 
                 # Creating a new dataframe that will contain information about the clusters that will be used for trading logic
                 optimal_portfolio_allocation_info_df = setup.cluster_df_setup(hf.get_total_account_value(api), og_df)
@@ -84,7 +87,7 @@ def main():
                 print("---------------------OPTIMAL PORTFOLIO ALLOCATION BASED ON TOTAL CURRENT ACCOUNT VALUE---------------------")
 
                 # Save the newsly created cluster df to a csv file
-                setup.Save_cluster_df(optimal_portfolio_allocation_info_df, location_of_csv_file)
+                setup.Save_cluster_df(optimal_portfolio_allocation_info_df, location_of_cluster_csv_file)
                 
                 # # Plotting cluster data
                 # setup.plot_clusters(stockdf)
@@ -95,13 +98,13 @@ def main():
                     # For every cluster
                     for index, row in optimal_portfolio_allocation_info_df.iterrows():
                         # Create a list of the tickers
-                        stocks_for_this_cluster = optimal_portfolio_allocation_info_df.at[index, "Tickers"]
+                        stocks_for_this_cluster = optimal_portfolio_allocation_info_df.loc[index, "Tickers"]
                         print(f"Symbols for cluster {index} are {stocks_for_this_cluster}")
                         if crypto:
                             stocks_for_this_cluster = [ticker.replace("-", "/") for ticker in stocks_for_this_cluster]
                             print(f"Since crypto, new symbols for cluster {index} are {stocks_for_this_cluster}")
                         # Store how much we should buy of each stock
-                        dollars_per_stock_for_cluster = optimal_portfolio_allocation_info_df.at[index, "Amount Per Stock"]
+                        dollars_per_stock_for_cluster = optimal_portfolio_allocation_info_df.loc[index, "Amount Per Stock"]
                         print(f"Cluster {index} will have ${dollars_per_stock_for_cluster} per stock alloted to it")
                         # For every stock in this cluster
                         for stock in stocks_for_this_cluster:
@@ -111,10 +114,10 @@ def main():
                     in_position = True
                     print("Setting in_position = True and sending email notification")
                     current_portfolio_df = setup.Get_current_portfolio_allocation(optimal_portfolio_allocation_info_df, api, crypto)
-                    print("---------------------CURRENT PORTFOLIO ALLOCATION---------------------")
+                    print("---------------------CURRENT PORTFOLIO ALLOCATION AFTER INITAL ALLOCATIONS---------------------")
                     print(current_portfolio_df)
                     #setup.send_email("Entered Initial Positions", " ")
-                    print("---------------------CURRENT PORTFOLIO ALLOCATION---------------------")
+                    print("---------------------CURRENT PORTFOLIO ALLOCATION AFTER INITIAL ALLOCATIONS---------------------")
                 if in_position:
                     print("We have positions open, so we will retreive them and see if they are optimzied")
                     current_portfolio_df = setup.Get_current_portfolio_allocation(optimal_portfolio_allocation_info_df, api, crypto)
@@ -144,9 +147,9 @@ def main():
                             print(f"Portfolio is not balanced: Most unoptimal cluster: {most_unop_cluster} by {most_unop_pct}")
 
                             total_portfolio_value = hf.get_total_account_value(api)#sum([float(hf.get_market_value(api, ticker, crypto=True)) for ticker in current_portfolio_df["Tickers"]]) + api.get_account().buying_power
-                            dollar_target_allocation = optimal_portfolio_allocation_info_df.at[most_unop_cluster, "Percentage"] * total_portfolio_value
-                            dollar_current_allocation = current_portfolio_df.loc[most_unop_cluster, 'Dollars In Cluster']#sum([float(hf.get_market_value(api, ticker, crypto=True)) for ticker in optimal_portfolio_allocation_info_df.at[most_unop_cluster, "Tickers"]])
-                            dollar_trade_amount = round((dollar_target_allocation - dollar_current_allocation), 2)
+                            dollar_target_allocation = optimal_portfolio_allocation_info_df.loc[most_unop_cluster, "Percentage"] * total_portfolio_value
+                            dollar_current_allocation = current_portfolio_df.loc[most_unop_cluster, 'Dollars In Cluster']#sum([float(hf.get_market_value(api, ticker, crypto=True)) for ticker in optimal_portfolio_allocation_info_df.loc[most_unop_cluster, "Tickers"]])
+                            dollar_trade_amount = (dollar_target_allocation - dollar_current_allocation)
 
                             # if the most unoptimzed cluster's off pct is negative, we will sell the ticker with the highest market value
                             # in the cluster that is the most optimized and then buy the ticker with the lowest market value in the 
@@ -159,7 +162,7 @@ def main():
                                     print("We have no cash left, need to sell something")
                                     highest_market_value = -float('inf')
                                     ticker_to_sell = None
-                                    for ticker in optimal_portfolio_allocation_info_df.at[most_op_cluster, "Tickers"]:
+                                    for ticker in optimal_portfolio_allocation_info_df.loc[most_op_cluster, "Tickers"]:
                                         market_value = float(hf.get_market_value(api, ticker, crypto=True))
                                         if market_value > highest_market_value:
                                             highest_market_value = market_value
@@ -168,15 +171,18 @@ def main():
                                     if ticker_to_sell:
                                         ticker_to_sell = ticker_to_sell.replace("-", "/")
                                         try:
-                                            hf.execute_trade("sell", dollar_trade_amount, ticker_to_sell, api, notional=True, crypto=crypto)
+                                            print('WE ARE HERE 1')
+                                            hf.execute_trade("sell", round(highest_market_value*0.96, 2), ticker_to_sell, api, notional=True, crypto=crypto)
                                             tm.sleep(10)  # Adjust the sleep time as needed for your platform's settlement time
                                         except Exception as e:
                                             print(f"Error executing sell order: {e}") 
                                 # have enough money to buy within unoptimized cluster
                                 print("Have necessary cash, can buy to reoptimize")
+                                # if float(api.get_account().buying_power) < dollar_trade_amount:
+                                #     dollar_trade_amount = float(api.get_account().buying_power)
                                 lowest_market_value = float('inf')
                                 ticker_to_buy = None
-                                for ticker in optimal_portfolio_allocation_info_df.at[most_unop_cluster, "Tickers"]:
+                                for ticker in optimal_portfolio_allocation_info_df.loc[most_unop_cluster, "Tickers"]:
                                     market_value = float(hf.get_market_value(api, ticker, crypto=True))
                                     if market_value < lowest_market_value:
                                         lowest_market_value = market_value
@@ -186,7 +192,7 @@ def main():
                                 if ticker_to_buy:
                                     ticker_to_buy = ticker_to_buy.replace("-", "/")
                                     try:
-                                        hf.execute_trade("buy", dollar_trade_amount, ticker_to_buy, api, notional=True, crypto=crypto)
+                                        hf.execute_trade("buy", round(dollar_trade_amount, 2), ticker_to_buy, api, notional=True, crypto=crypto)
                                     except Exception as e:
                                         print(f"Error executing buy order: {e}")
                             # Otherwise, if the most unoptimzed cluster's off pct is positive, we will sell the ticker with the highest market value
@@ -199,7 +205,7 @@ def main():
                                     print("We have no cash left, need to sell something")
                                     highest_market_value = -float('inf')
                                     ticker_to_sell = None
-                                    for ticker in optimal_portfolio_allocation_info_df.at[most_unop_cluster, "Tickers"]:
+                                    for ticker in optimal_portfolio_allocation_info_df.loc[most_unop_cluster, "Tickers"]:
                                         market_value = float(hf.get_market_value(api, ticker, crypto=True))
                                         if market_value > highest_market_value:
                                             highest_market_value = market_value
@@ -208,15 +214,18 @@ def main():
                                     if ticker_to_sell:
                                         ticker_to_sell = ticker_to_sell.replace("-", "/")
                                         try:
-                                            hf.execute_trade("sell", highest_market_value, ticker_to_sell, api, notional=True, crypto=crypto)
+                                            print(f'WE ARE HERE 2; dollar trade amount is {dollar_trade_amount} and highest market value is {highest_market_value}')
+                                            hf.execute_trade("sell", round(highest_market_value*0.96, 2), ticker_to_sell, api, notional=True, crypto=crypto)
                                             tm.sleep(10)  # Adjust the sleep time as needed for your platform's settlement time
                                         except Exception as e:
                                             print(f"Error executing sell order: {e}") 
 
                                 print("Have necessary cash, can buy to reoptimize")
+                                # if float(api.get_account().buying_power) < dollar_trade_amount:
+                                #     dollar_trade_amount = float(api.get_account().buying_power)
                                 lowest_market_value = float('inf')
                                 ticker_to_buy = None
-                                for ticker in optimal_portfolio_allocation_info_df.at[most_op_cluster, "Tickers"]:
+                                for ticker in optimal_portfolio_allocation_info_df.loc[most_op_cluster, "Tickers"]:
                                     market_value = float(hf.get_market_value(api, ticker, crypto=True))
                                     if market_value < lowest_market_value:
                                         lowest_market_value = market_value
@@ -226,7 +235,7 @@ def main():
                                 if ticker_to_buy:
                                     ticker_to_buy = ticker_to_buy.replace("-", "/")
                                     try:
-                                        hf.execute_trade("buy", abs(dollar_trade_amount), ticker_to_buy, api, notional=True, crypto=crypto)
+                                        hf.execute_trade("buy", abs(round(dollar_trade_amount,2)), ticker_to_buy, api, notional=True, crypto=crypto)
                                     except Exception as e:
                                         print(f"Error executing buy order: {e}")
         
@@ -242,7 +251,7 @@ def main():
                     while float(api.get_account().buying_power) > 10:
                         lowest_market_value = float('inf')
                         ticker_to_buy = None
-                        for ticker in optimal_portfolio_allocation_info_df.at[setup.Get_most_optimized_cluster(current_portfolio_df)[0], "Tickers"]:
+                        for ticker in optimal_portfolio_allocation_info_df.loc[setup.Get_most_optimized_cluster(current_portfolio_df)[0], "Tickers"]:
                             market_value = float(hf.get_market_value(api, ticker, crypto=True))
                             if market_value < lowest_market_value:
                                 lowest_market_value = market_value
