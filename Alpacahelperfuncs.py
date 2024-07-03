@@ -78,5 +78,5 @@ def execute_trade(action, amount, symbol, api, notional=False, crypto=False):
 
 def get_total_account_value(api):
     account = api.get_account()
-    return float(account.equity)  # Assuming equity represents the total market value of your account
+    return float(account.equity) # Assuming equity represents the total market value of your account
 

@@ -13,6 +13,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
+import alpaca_trade_api as tradeapi
 
 
 load_dotenv()
@@ -353,9 +354,12 @@ def main():
     # plot_clusters(stockdf)
     # send_email("Trade Executed", "A trade has been executed successfully.")
     # Example usage
-    file_path = 'Sheryl/crypto_data.csv'
-    create_crypto_csv(file_path)
-    file_path = 'Sheryl/sp500_test.csv'
-    Create_sp500_csv(file_path)
+    #file_path = 'Sheryl/crypto_data.csv'
+    #create_crypto_csv(file_path)
+    #file_path = 'Sheryl/sp500_test.csv'
+    #Create_sp500_csv(file_path)
+    #api = tradeapi.REST('PKOWXRDZYNPX4FPPV7I0', 'I3YJTzkTO6obxiCWAz2YeDFOuQAO4rDM9Pj6nmhE', 'https://paper-api.alpaca.markets', api_version='v2')
+    #print(hf.get_total_account_value(api))
+    pass
 if __name__ == "__main__":
     main()
