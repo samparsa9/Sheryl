@@ -235,6 +235,7 @@ def Get_current_portfolio_allocation(optimal_portfolio_allocation_df, api, crypt
             #"Cluster": [0,1,2,3,4],
             "Cluster": [0,1,2,3],
             "Current Pct Allocation": [0] * 4,
+            "Pct Off From Optimal": [0] * 4,
             #"Dollars In Cluster": [0] * 5,
             "Dollars In Cluster": [0] * 4
         })
@@ -255,9 +256,35 @@ def Get_current_portfolio_allocation(optimal_portfolio_allocation_df, api, crypt
     for cluster in optimal_portfolio_allocation_df.index:
         dollars_in_this_cluster = current_portfolio_allocation.loc[cluster, 'Dollars In Cluster']
         account_value = hf.get_total_account_value(api)
-        to_input = (dollars_in_this_cluster / account_value)
-        current_portfolio_allocation.at[cluster, "Current Pct Allocation"] = to_input
+
+        current_cluster_pct_allocation = (dollars_in_this_cluster / account_value)
+        optimal_cluster_pct_allocation = optimal_portfolio_allocation_df.at[cluster, "Percentage"]
+
+        current_portfolio_allocation.at[cluster, "Current Pct Allocation"] = current_cluster_pct_allocation
+        current_portfolio_allocation.at[cluster, "Pct Off From Optimal"] = current_cluster_pct_allocation - optimal_cluster_pct_allocation
+
     return current_portfolio_allocation
+
+
+def Get_most_unoptimized_cluster(current_portfolio_df):
+    most_unoptimized_cluster = None
+    largest_pct_off_by = 0
+    for cluster, row in current_portfolio_df.iterrows():
+        this_cluster_off_by = current_portfolio_df.loc[cluster, "Pct Off From Optimal"]
+        if abs(this_cluster_off_by) > abs(largest_pct_off_by):
+            largest_pct_off_by = this_cluster_off_by
+            most_unoptimized_cluster = cluster
+    return most_unoptimized_cluster, largest_pct_off_by
+
+def Get_most_optimized_cluster(current_portfolio_df):
+    most_optimized_cluster = None
+    lowest_pct_off_by = 1
+    for cluster, row in current_portfolio_df.iterrows():
+        this_cluster_off_by = current_portfolio_df.loc[cluster, "Pct Off From Optimal"]
+        if abs(this_cluster_off_by) < abs(lowest_pct_off_by):
+            lowest_pct_off_by = this_cluster_off_by
+            most_optimized_cluster = cluster
+    return most_optimized_cluster, lowest_pct_off_by
 
 
 def Get_most_unoptimized_clusters(optimal_portfolio_allocation_df, current_portfolio_allocation, api):
@@ -297,11 +324,13 @@ def Get_most_unoptimized_clusters(optimal_portfolio_allocation_df, current_portf
     tuple_to_return = ((Highest_unoptimal_allocation_cluster, Highest_unoptimal_allocation_pct), (Lowest_unoptimal_allocation_cluster, Lowest_unoptimal_allocation_pct))
     return tuple_to_return
 
-def Is_balanced(optimal_portfolio_df, current_portfolio_df, api):
-    unoptimized_clusters = Get_most_unoptimized_clusters(optimal_portfolio_df, current_portfolio_df, api)
-    H_unop_alloc_pct = unoptimized_clusters[0][1]
-    L_unop_alloc_pct = unoptimized_clusters[1][1]
-    return abs(H_unop_alloc_pct) < 0.02 and abs(L_unop_alloc_pct) < 0.02 #changed threshold
+def Is_balanced(current_portfolio_df, api):
+    largest_pct_off_by = 0
+    for cluster, row in current_portfolio_df.iterrows():
+        this_cluster_off_by = current_portfolio_df.loc[cluster, "Pct Off From Optimal"]
+        if abs(this_cluster_off_by) > abs(largest_pct_off_by):
+            largest_pct_off_by = this_cluster_off_by
+    return abs(largest_pct_off_by) < 0.02 #changed threshold
 
 def calculate_seconds_till_next_reallocation(timezone, hour_to_trade, minute_to_trade):
                 now = datetime.now(timezone)
