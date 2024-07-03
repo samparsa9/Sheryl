@@ -1,6 +1,17 @@
 import alpaca_trade_api as tradeapi
 import numpy as np
+import os
+from dotenv import load_dotenv
 
+# load_dotenv()
+# # Alpaca Info
+# api_key = os.getenv('api_key')
+# api_secret = os.getenv("api_secret")
+# base_url = os.getenv('base_url')
+
+
+# # Initialize Alpaca API
+# api = tradeapi.REST(api_key, api_secret, base_url, api_version='v2')
 
 def get_available_balance(api, symbol):
     try:
@@ -14,8 +25,7 @@ def get_available_balance(api, symbol):
 
 def get_market_value(api, ticker, crypto=False):
     try:
-        print("cyrpto should have '-': " + ticker)
-        ticker = ticker.replace("-", "")
+        ticker = ticker.replace("-", "") # not sure if this should be here
         position = api.get_position(ticker)
         market_value = float(position.market_value)
         return market_value
@@ -45,6 +55,7 @@ def execute_trade(action, amount, symbol, api, notional=False, crypto=False):
                 time_in_force='day'
             )
         elif notional and crypto == True:
+            # symbol = symbol.replace("-", "") # added this line
             order = api.submit_order(
                 symbol=str(symbol),
                 notional=float(amount),
@@ -60,7 +71,7 @@ def execute_trade(action, amount, symbol, api, notional=False, crypto=False):
                 type='market',
                 time_in_force='gtc'
             )
-        print(f"Successfully Executed {action} for {amount} of {symbol}")
+        print(f"Successfully Executed {action} for ${amount} of {symbol}")
         return order
     except Exception as e:
         print(f"Error executing {action} order: {e}")
@@ -68,3 +79,4 @@ def execute_trade(action, amount, symbol, api, notional=False, crypto=False):
 def get_total_account_value(api):
     account = api.get_account()
     return float(account.equity)  # Assuming equity represents the total market value of your account
+

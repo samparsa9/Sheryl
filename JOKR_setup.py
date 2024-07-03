@@ -37,7 +37,7 @@ def send_email(subject, message):
         text = msg.as_string()
         server.sendmail(sender, recipient, text)
         server.quit()
-        print('Email sent')
+        # print('Email sent')
     except Exception as e:
         print(f"Failed to send email: {e}")
 
@@ -69,7 +69,7 @@ def Create_sp500_csv(file_path):
 def create_crypto_csv(file_path):
 
     crypto_df = pd.DataFrame({
-            "Symbol": ["LTC/USD","ETH/USD","DOGE/USD",]
+            "Symbol": ["AAVE/USD","AVAX/USD","BAT/USD","BCH/USD","BTC/USD","CRV/USD","DOGE/USD","DOT/USD","ETH/USD","GRT/USD","LINK/USD","LTC/USD","MKR/USD","SHIB/USD","SUSHI/USD","UNI/USD","USDC/USD","USDT/USD","XTZ/USD"]
         })
     
     # Ensure the directory exists
@@ -192,21 +192,21 @@ def cluster_df_setup(starting_cash, stock_df):
     # CHANGE ALL THIS BACK
     cluster_info_df = pd.DataFrame({
              #"Cluster": [0,1,2,3,4],
-            "Cluster": [0,1,2],
+            "Cluster": [0,1,2,3],
             #"Percentage": [0.2, 0.4, 0.2, 0.1, 0.1], #percentage of allocation for each cluster
-            "Percentage": [0.2, 0.4, 0.2],
+            "Percentage": [0.2, 0.4, 0.2, 0.2],
             #"Dollars In Cluster": [0] * 5,
-            "Dollars In Cluster": [0] * 3,
+            "Dollars In Cluster": [0] * 4,
             #"Num Stocks": [0] * 5, #number of stocks in each cluster
-            "Num Stocks": [0] * 3,
+            "Num Stocks": [0] * 4,
             #"Amount Per Stock": [0] * 5,
-            "Amount Per Stock": [0] * 3,
+            "Amount Per Stock": [0] * 4,
             #"Tickers": [[], [], [], [], []] #list of tickers for each cluster
-            "Tickers": [[], [], []]
+            "Tickers": [[], [], [], []]
         })
 
     # Set the portfolio amount for each cluster
-    cluster_info_df["Dollars In Cluster"] = cluster_info_df["Percentage"] * portfolio_amt
+    cluster_info_df["Dollars In Cluster"] = round((cluster_info_df["Percentage"] * portfolio_amt),2)
     cluster_info_df.set_index("Cluster", inplace=True)
     #figure out how many stocks are in each cluster, and fill tickers column
     for ticker, row in stock_df.iterrows():
@@ -223,7 +223,7 @@ def cluster_df_setup(starting_cash, stock_df):
     for index, row in cluster_info_df.iterrows():
         # index is the cluster number
         if cluster_info_df.at[index, "Num Stocks"] > 0:
-            cluster_info_df.at[index, "Amount Per Stock"] = int(cluster_info_df.at[index, "Dollars In Cluster"] / cluster_info_df.at[index, "Num Stocks"])
+            cluster_info_df.at[index, "Amount Per Stock"] = round((cluster_info_df.at[index, "Dollars In Cluster"] / cluster_info_df.at[index, "Num Stocks"]), 2)
         else:
             cluster_info_df.at[index, "Amount Per Stock"] = 0  # Avoid division by zero
     
@@ -233,9 +233,10 @@ def Get_current_portfolio_allocation(optimal_portfolio_allocation_df, api, crypt
     # Create a new dataframe that represents our current portfolios dollar allocation each clusters
     current_portfolio_allocation = pd.DataFrame({
             #"Cluster": [0,1,2,3,4],
-            "Cluster": [0,1,2],
+            "Cluster": [0,1,2,3],
+            "Current Pct Allocation": [0] * 4,
             #"Dollars In Cluster": [0] * 5,
-            "Dollars In Cluster": [0] * 3
+            "Dollars In Cluster": [0] * 4
         })
     current_portfolio_allocation.set_index("Cluster", inplace=True)
     # This for loop will be used to calulate the total dollars in each cluster by looping through each ticker in each cluster
@@ -243,14 +244,19 @@ def Get_current_portfolio_allocation(optimal_portfolio_allocation_df, api, crypt
     for cluster in optimal_portfolio_allocation_df.index:
         dollars_in_this_cluster = 0
         tickers = optimal_portfolio_allocation_df.at[cluster, "Tickers"]
-        optimal_portfolio_allocation_df.at[cluster, "Tickers"]
         for ticker in tickers:
+            #print("here is the ticker before its sent to the func: " + ticker)
             market_value = hf.get_market_value(api, ticker, crypto)
-            print(f"Ticker: {ticker}, Market Value: {market_value}")
+            # print(f"Ticker: {ticker}, Market Value: {market_value}")
             dollars_in_this_cluster += market_value
         # Populating the Dollars In Cluster column with these new values in our current portfolio allocation df
         current_portfolio_allocation.at[cluster, "Dollars In Cluster"] = dollars_in_this_cluster
-        print(f"Cluster {cluster}, Dollars In Cluster: {dollars_in_this_cluster}")
+        # print(f"Cluster {cluster}, Dollars In Cluster: {dollars_in_this_cluster}")
+    for cluster in optimal_portfolio_allocation_df.index:
+        dollars_in_this_cluster = current_portfolio_allocation.loc[cluster, 'Dollars In Cluster']
+        account_value = hf.get_total_account_value(api)
+        to_input = (dollars_in_this_cluster / account_value)
+        current_portfolio_allocation.at[cluster, "Current Pct Allocation"] = to_input
     return current_portfolio_allocation
 
 
@@ -260,7 +266,6 @@ def Get_most_unoptimized_clusters(optimal_portfolio_allocation_df, current_portf
     it will then see if the portfolio is balanced correctly depending on the cluster allocations,
     if it is not, it will return the two clusters off by the most percentage
     """
-    
     # Initializing variables to represent the highest unoptimal cluster and how much higher than optimal it is
     # And the lowest unoptimal cluster and how much lower than optimal it is
     Highest_unoptimal_allocation_pct = -float('inf')
@@ -268,26 +273,25 @@ def Get_most_unoptimized_clusters(optimal_portfolio_allocation_df, current_portf
     Highest_unoptimal_allocation_cluster = 0
     Lowest_unoptimal_allocation_cluster = 0
 
-    # For every cluster, we will see how many dollars we have allocated currently and how many we should have
+    # For every cluster, compare current to optimal percent
     for index, row in optimal_portfolio_allocation_df.iterrows():
         # Retreiving and storing this clusters current dollar allocation
-        current_dollar_allocation = current_portfolio_allocation.at[index, "Dollars In Cluster"]
+        current_pct_allocation = current_portfolio_allocation.at[index, "Current Pct Allocation"]
         # Retreiving and storing this clusters optimal dollar allocation
-        optimal_dollar_allocation = optimal_portfolio_allocation_df.at[index, "Dollars In Cluster"]
+        optimal_pct_allocation = optimal_portfolio_allocation_df.at[index, "Percentage"]
 
-        # Avoiding division by 0
-        if optimal_dollar_allocation != 0:
-            # Storing the % diff higher or lower than optimal the current allocation is
-            pct_diff_between_current_and_optimal_allocation = (current_dollar_allocation / optimal_dollar_allocation) - 1
-            print(f'pct_diff_between_current_and_optimal_allocation: {pct_diff_between_current_and_optimal_allocation}\ncurrent_dollar_allocation: {current_dollar_allocation}\noptimal_dollar_allocation: {optimal_dollar_allocation}')
-            # If the % diff is higher than the current highest unoptimal allocation, set it to this new % diff and update which cluster
-            if pct_diff_between_current_and_optimal_allocation > Highest_unoptimal_allocation_pct:
-                Highest_unoptimal_allocation_pct = pct_diff_between_current_and_optimal_allocation
-                Highest_unoptimal_allocation_cluster = index
-            # If the % diff is lower than the current lowest unoptimal allocation, set it to this new % diff and update which cluster
-            elif pct_diff_between_current_and_optimal_allocation < Lowest_unoptimal_allocation_pct:
-                Lowest_unoptimal_allocation_pct = pct_diff_between_current_and_optimal_allocation
-                Lowest_unoptimal_allocation_cluster = index
+
+        # Storing the % diff higher or lower than optimal the current allocation is
+        pct_diff_between_current_and_optimal_allocation = current_pct_allocation - optimal_pct_allocation
+        # print(f'pct_diff_between_current_and_optimal_allocation: {pct_diff_between_current_and_optimal_allocation}\ncurrent_dollar_allocation: {current_dollar_allocation}\noptimal_dollar_allocation: {optimal_dollar_allocation}')
+        # If the % diff is higher than the current highest unoptimal allocation, set it to this new % diff and update which cluster
+        if pct_diff_between_current_and_optimal_allocation > Highest_unoptimal_allocation_pct:
+            Highest_unoptimal_allocation_pct = pct_diff_between_current_and_optimal_allocation
+            Highest_unoptimal_allocation_cluster = index
+        # If the % diff is lower than the current lowest unoptimal allocation, set it to this new % diff and update which cluster
+        elif pct_diff_between_current_and_optimal_allocation < Lowest_unoptimal_allocation_pct:
+            Lowest_unoptimal_allocation_pct = pct_diff_between_current_and_optimal_allocation
+            Lowest_unoptimal_allocation_cluster = index
 
     # Returning the values as a tuple of tuples
     tuple_to_return = ((Highest_unoptimal_allocation_cluster, Highest_unoptimal_allocation_pct), (Lowest_unoptimal_allocation_cluster, Lowest_unoptimal_allocation_pct))
@@ -297,7 +301,7 @@ def Is_balanced(optimal_portfolio_df, current_portfolio_df, api):
     unoptimized_clusters = Get_most_unoptimized_clusters(optimal_portfolio_df, current_portfolio_df, api)
     H_unop_alloc_pct = unoptimized_clusters[0][1]
     L_unop_alloc_pct = unoptimized_clusters[1][1]
-    return float(abs(H_unop_alloc_pct)) < 0.03 and float(abs(L_unop_alloc_pct) < 0.03)
+    return abs(H_unop_alloc_pct) < 0.02 and abs(L_unop_alloc_pct) < 0.03 #changed threshold
 
 def calculate_seconds_till_next_reallocation(timezone, hour_to_trade, minute_to_trade):
                 now = datetime.now(timezone)
