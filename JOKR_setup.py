@@ -301,7 +301,7 @@ def Is_balanced(optimal_portfolio_df, current_portfolio_df, api):
     unoptimized_clusters = Get_most_unoptimized_clusters(optimal_portfolio_df, current_portfolio_df, api)
     H_unop_alloc_pct = unoptimized_clusters[0][1]
     L_unop_alloc_pct = unoptimized_clusters[1][1]
-    return abs(H_unop_alloc_pct) < 0.02 and abs(L_unop_alloc_pct) < 0.03 #changed threshold
+    return abs(H_unop_alloc_pct) < 0.02 and abs(L_unop_alloc_pct) < 0.02 #changed threshold
 
 def calculate_seconds_till_next_reallocation(timezone, hour_to_trade, minute_to_trade):
                 now = datetime.now(timezone)
