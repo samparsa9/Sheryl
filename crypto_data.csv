@@ -1,0 +1,4 @@
+Cluster,Percentage,Dollars In Cluster,Num Stocks,Amount Per Stock,Tickers
+0,0.2,200.0,1,200,['LTC-USD']
+1,0.4,400.0,1,400,['ETH-USD']
+2,0.2,200.0,1,200,['DOGE-USD']

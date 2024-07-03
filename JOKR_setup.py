@@ -12,6 +12,7 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
+from datetime import datetime, timedelta, timezone
 
 
 load_dotenv()
@@ -64,7 +65,20 @@ def Create_sp500_csv(file_path):
 
     # # Save the DataFrame to a CSV file for reference
     df.to_csv(file_path, index=False)
+
+def create_crypto_csv(file_path):
+
+    crypto_df = pd.DataFrame({
+            "Symbol": ["LTC/USD","ETH/USD","DOGE/USD",]
+        })
     
+    # Ensure the directory exists
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+    # Save the DataFrame to a CSV file
+    crypto_df.to_csv(file_path, index=False)
+
+
 
 def Create_list_of_tickers(dfindex):
     # Define the stock tickers
@@ -74,7 +88,7 @@ def Create_list_of_tickers(dfindex):
     return tickers
 
 
-def Calculate_features(tickers, df, batch_size=10):
+def Calculate_features(tickers, df, batch_size=10, crypto=False):
     # Fetch historical data for SP500 
     sp500_data = yf.download('^GSPC', period='1y')
     sp500_data['Market Return'] = sp500_data['Adj Close'].pct_change()
@@ -86,10 +100,14 @@ def Calculate_features(tickers, df, batch_size=10):
     # Processing in batches
     for i in range(0, len(tickers), batch_size):
         batch = tickers[i:i + batch_size]
+        # Replace "-" with "/" in each string in the batch list
+        if crypto == True:
+            batch = [ticker.replace("/", "-") for ticker in batch]
 
         # Fetch data for this batch
         batch_data = yf.download(batch, period='1y', group_by='ticker')
-        
+
+
         for ticker in batch:
             ticker_data = batch_data[ticker]
             ticker_data['Return'] = ticker_data['Adj Close'].pct_change()
@@ -171,13 +189,20 @@ def plot_clusters(df):
 def cluster_df_setup(starting_cash, stock_df):
     portfolio_amt = starting_cash
 
+    # CHANGE ALL THIS BACK
     cluster_info_df = pd.DataFrame({
-            "Cluster": [0,1,2,3,4],
-            "Percentage": [0.2, 0.4, 0.2, 0.1, 0.1], #percentage of allocation for each cluster
-            "Dollars In Cluster": [0] * 5,
-            "Num Stocks": [0] * 5, #number of stocks in each cluster
-            "Amount Per Stock": [0] * 5,
-            "Tickers": [[], [], [], [], []] #list of tickers for each cluster
+             #"Cluster": [0,1,2,3,4],
+            "Cluster": [0,1,2],
+            #"Percentage": [0.2, 0.4, 0.2, 0.1, 0.1], #percentage of allocation for each cluster
+            "Percentage": [0.2, 0.4, 0.2],
+            #"Dollars In Cluster": [0] * 5,
+            "Dollars In Cluster": [0] * 3,
+            #"Num Stocks": [0] * 5, #number of stocks in each cluster
+            "Num Stocks": [0] * 3,
+            #"Amount Per Stock": [0] * 5,
+            "Amount Per Stock": [0] * 3,
+            #"Tickers": [[], [], [], [], []] #list of tickers for each cluster
+            "Tickers": [[], [], []]
         })
 
     # Set the portfolio amount for each cluster
@@ -204,21 +229,28 @@ def cluster_df_setup(starting_cash, stock_df):
     
     return cluster_info_df
 
-def Get_current_portfolio_allocation(optimal_portfolio_allocation_df, api):
+def Get_current_portfolio_allocation(optimal_portfolio_allocation_df, api, crypto=False):
     # Create a new dataframe that represents our current portfolios dollar allocation each clusters
     current_portfolio_allocation = pd.DataFrame({
-            "Cluster": [0,1,2,3,4],
-            "Dollars In Cluster": [0] * 5,
+            #"Cluster": [0,1,2,3,4],
+            "Cluster": [0,1,2],
+            #"Dollars In Cluster": [0] * 5,
+            "Dollars In Cluster": [0] * 3
         })
     current_portfolio_allocation.set_index("Cluster", inplace=True)
     # This for loop will be used to calulate the total dollars in each cluster by looping through each ticker in each cluster
     # Snd adding the market value of our position in that ticker to a running sum
     for cluster in optimal_portfolio_allocation_df.index:
         dollars_in_this_cluster = 0
-        for ticker in optimal_portfolio_allocation_df.at[cluster, "Tickers"]:
-            dollars_in_this_cluster += hf.get_market_value(api, ticker)
+        tickers = optimal_portfolio_allocation_df.at[cluster, "Tickers"]
+        optimal_portfolio_allocation_df.at[cluster, "Tickers"]
+        for ticker in tickers:
+            market_value = hf.get_market_value(api, ticker, crypto)
+            print(f"Ticker: {ticker}, Market Value: {market_value}")
+            dollars_in_this_cluster += market_value
         # Populating the Dollars In Cluster column with these new values in our current portfolio allocation df
         current_portfolio_allocation.at[cluster, "Dollars In Cluster"] = dollars_in_this_cluster
+        print(f"Cluster {cluster}, Dollars In Cluster: {dollars_in_this_cluster}")
     return current_portfolio_allocation
 
 
@@ -267,6 +299,12 @@ def Is_balanced(optimal_portfolio_df, current_portfolio_df, api):
     L_unop_alloc_pct = unoptimized_clusters[1][1]
     return float(abs(H_unop_alloc_pct)) < 0.03 and float(abs(L_unop_alloc_pct) < 0.03)
 
+def calculate_seconds_till_next_reallocation(timezone, hour_to_trade, minute_to_trade):
+                now = datetime.now(timezone)
+                target_time = now.replace(hour=hour_to_trade, minute=minute_to_trade, second=0, microsecond=0)
+                if now > target_time:
+                    target_time += timedelta(days=1)
+                return int((target_time - now).total_seconds())
 def main():
     # location_of_sp500_csv_file = 'Sheryl/sp500_companies.csv'
     # Create_sp500_csv(location_of_sp500_csv_file)
@@ -280,7 +318,11 @@ def main():
     # cluster_df = cluster_df_setup(1000000, stockdf)
     # # Plot the clusters
     # plot_clusters(stockdf)
-    send_email("Trade Executed", "A trade has been executed successfully.")
-
+    # send_email("Trade Executed", "A trade has been executed successfully.")
+    # Example usage
+    file_path = 'Sheryl/crypto_data.csv'
+    create_crypto_csv(file_path)
+    file_path = 'Sheryl/sp500_test.csv'
+    Create_sp500_csv(file_path)
 if __name__ == "__main__":
     main()

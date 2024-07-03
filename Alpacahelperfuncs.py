@@ -12,11 +12,15 @@ def get_available_balance(api, symbol):
         else:
             raise e
 
-def get_market_value(api, symbol):
+def get_market_value(api, ticker, crypto=False):
     try:
-        market_value = api.get_position(symbol).market_value
+        print("cyrpto should have '-': " + ticker)
+        ticker = ticker.replace("-", "")
+        position = api.get_position(ticker)
+        market_value = float(position.market_value)
         return market_value
-    except tradeapi.rest.APIError as e:
+    except Exception as e:
+        print(f"Failed to get market value for ticker '{ticker}': {e}")
         return 0
 
 def in_position(api):
@@ -30,15 +34,23 @@ def in_position(api):
         print("Error fetching positions: {e}")
         return []
     
-def execute_trade(action, amount, symbol, api, notional=False):
+def execute_trade(action, amount, symbol, api, notional=False, crypto=False):
     try:
-        if notional:
+        if notional and crypto == False:
             order = api.submit_order(
                 symbol=str(symbol),
                 notional=float(amount),
                 side=action,
                 type='market',
                 time_in_force='day'
+            )
+        elif notional and crypto == True:
+            order = api.submit_order(
+                symbol=str(symbol),
+                notional=float(amount),
+                side=action,
+                type='market',
+                time_in_force='gtc'
             )
         else:
             order = api.submit_order(
@@ -52,3 +64,7 @@ def execute_trade(action, amount, symbol, api, notional=False):
         return order
     except Exception as e:
         print(f"Error executing {action} order: {e}")
+
+def get_total_account_value(api):
+    account = api.get_account()
+    return float(account.equity)  # Assuming equity represents the total market value of your account
