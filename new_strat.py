@@ -48,7 +48,7 @@ def main():
 
     while True: # FOR DEBUGGING, SET BACK TO TRUE
         try:
-            print("----------New Clustering and Allocation Iteration---------")
+            print("-------------------New Clustering and Allocation Iteration------------------")
 
             # If the time is 10:00 AM, set up all data that will be needed for allocation/reallocation
             if (now.hour == hour_to_trade and now.minute == minute_to_trade): # CHANGE THE TIME TO DEBUG
@@ -84,10 +84,10 @@ def main():
 
                 print("---------------------OPTIMAL PORTFOLIO ALLOCATION BASED ON TOTAL CURRENT ACCOUNT VALUE---------------------") 
                 print(optimal_portfolio_allocation_info_df)
-                print("---------------------OPTIMAL PORTFOLIO ALLOCATION BASED ON TOTAL CURRENT ACCOUNT VALUE---------------------")
+                print("-----------------------------------------------------------------------------------------------------------")
 
                 # Save the newsly created cluster df to a csv file
-                setup.Save_cluster_df(optimal_portfolio_allocation_info_df, location_of_cluster_csv_file)
+                setup.Sort_and_save(optimal_portfolio_allocation_info_df, location_of_cluster_csv_file)
                 
                 # # Plotting cluster data
                 # setup.plot_clusters(stockdf)
@@ -98,6 +98,7 @@ def main():
                     # For every cluster
                     for index, row in optimal_portfolio_allocation_info_df.iterrows():
                         # Create a list of the tickers
+                        print('-'*50)
                         stocks_for_this_cluster = optimal_portfolio_allocation_info_df.loc[index, "Tickers"]
                         print(f"Symbols for cluster {index} are {stocks_for_this_cluster}")
                         if crypto:
@@ -106,6 +107,7 @@ def main():
                         # Store how much we should buy of each stock
                         dollars_per_stock_for_cluster = optimal_portfolio_allocation_info_df.loc[index, "Amount Per Stock"]
                         print(f"Cluster {index} will have ${dollars_per_stock_for_cluster} per stock alloted to it")
+                        print('-'*50)
                         # For every stock in this cluster
                         for stock in stocks_for_this_cluster:
                             # Buy the specified amount of that stock
@@ -115,12 +117,11 @@ def main():
                     in_position = True
                     current_portfolio_df = setup.Get_current_portfolio_allocation(optimal_portfolio_allocation_info_df, api, crypto)
                     optimal_portfolio_allocation_info_df = setup.cluster_df_setup(hf.get_total_account_value(api), og_df)
-                    print("Setting in_position = True and sending email notification")
-                    print("---------------------CURRENT PORTFOLIO ALLOCATION AFTER INITAL ALLOCATIONS---------------------")
+                    print("---------------------INITIAL POSITION AFTER NOT BEING IN POSITIONS---------------------")
                     print(current_portfolio_df)
                     #setup.send_email("Entered Initial Positions", " ")
-                    print("---------------------CURRENT PORTFOLIO ALLOCATION AFTER INITIAL ALLOCATIONS---------------------")
-                    
+                    print("---------------------------------------------------------------------------------------")
+                
                 if in_position:
                     print("We have positions open, so we will retreive them and see if they are optimzed")
                     current_portfolio_df = setup.Get_current_portfolio_allocation(optimal_portfolio_allocation_info_df, api, crypto)
@@ -128,14 +129,14 @@ def main():
                     optimal_portfolio_allocation_info_df = setup.cluster_df_setup(hf.get_total_account_value(api), og_df)
                     print("---------------------CURRENT PORTFOLIO ALLOCATION---------------------")
                     print(current_portfolio_df)
-                    print("---------------------CURRENT PORTFOLIO ALLOCATION---------------------")
+                    print("----------------------------------------------------------------------")
                     #setup.send_email("Entered Initial Positions", " ")
                     if setup.Is_balanced(current_portfolio_df, api):
                         print("The portfolio is balanced, no need to rebalance")
                         #('Portfolio is Still Balanced', ' ')
                     else:
                         # Step 1: Go through each cluster, look for overallocated clusters. If found, sell from tickers to reach optimized percentage.
-                        print('---------------------STEP 1---------------------')
+                        print('---------------------SELLING OVERALLOCATED CLUSTERS---------------------')
                         overallocated_df = current_portfolio_df[current_portfolio_df['Pct Off From Optimal'] > 0]
                         for cluster, row in overallocated_df.iterrows():
                             while current_portfolio_df.loc[cluster, 'Pct Off From Optimal'] > 0.01:
@@ -150,18 +151,19 @@ def main():
                                     ticker_to_sell = ticker_to_sell.replace("-", "")
                                     ticker_to_sell = ticker_to_sell.replace("/", "")
                                     try:
-                                        hf.execute_trade("sell", round(hf.get_available_balance(api, ticker_to_sell) / 2), ticker_to_sell, api, notional=False, crypto=crypto)
-                                        tm.sleep(5)  # Adjust the sleep time as needed for your platform's settlement time
-                                        print("---------------------NEW PORTFOLIO ALLOCATION---------------------")
-                                        print(current_portfolio_df)
-                                        print("---------------------NEW PORTFOLIO ALLOCATION---------------------")
+
+                                        hf.execute_trade("sell", 10, ticker_to_sell, api, notional=True, crypto=crypto)
+                                        tm.sleep(2)  # Adjust the sleep time as needed for your platform's settlement time
+                                        # print("---------------------NEW PORTFOLIO ALLOCATION---------------------")
+                                        # print(current_portfolio_df)
+                                        # print("---------------------NEW PORTFOLIO ALLOCATION---------------------")
                                     except Exception as e:
                                         print(f"Error executing sell order: {e}") 
                                 current_portfolio_df = setup.Get_current_portfolio_allocation(optimal_portfolio_allocation_info_df, api, crypto)
                                 optimal_portfolio_allocation_info_df = setup.cluster_df_setup(hf.get_total_account_value(api), og_df)
-                        
+                        print("-"*50)
                         # Step 2: Go through each cluster, look for underallocated clusters. If found, buy tickers in cluster to reach optimized percentage.
-                        print('---------------------STEP 2---------------------')
+                        print('---------------------BUYING UNDERALLOCATED CLUSTERS---------------------')
                         underallocated_df = current_portfolio_df[current_portfolio_df['Pct Off From Optimal'] < 0]
                         for cluster, row in underallocated_df.iterrows():
                             while abs(current_portfolio_df.loc[cluster, 'Pct Off From Optimal']) > 0.03:
@@ -178,21 +180,21 @@ def main():
                                     ticker_to_buy = ticker_to_buy.replace("/", "")
                                     try:
                                         # print(f"trying to buy {dollar_trade_amount} worth of {ticker_to_buy}")
-                                        print(f'Remaining buying power: {api.get_account().buying_power}')
+                                        # print(f'Remaining buying power: {api.get_account().buying_power}')
                                         hf.execute_trade("buy", 10, ticker_to_buy, api, notional=True, crypto=crypto)
-                                        tm.sleep(5)
-                                        print(f'Remaining buying power after purchase: {api.get_account().buying_power}')
-                                        print("---------------------NEW PORTFOLIO ALLOCATION---------------------")
-                                        print(current_portfolio_df)
-                                        print("---------------------NEW PORTFOLIO ALLOCATION---------------------")
+                                        tm.sleep(2)
+                                        # print(f'Remaining buying power after purchase: {api.get_account().buying_power}')
+                                        # print("---------------------NEW PORTFOLIO ALLOCATION---------------------")
+                                        # print(current_portfolio_df)
+                                        # print("---------------------NEW PORTFOLIO ALLOCATION---------------------")
                                     except Exception as e:
                                         print(f"Error executing buy order: {e}")
                                 current_portfolio_df = setup.Get_current_portfolio_allocation(optimal_portfolio_allocation_info_df, api, crypto)
                                 optimal_portfolio_allocation_info_df = setup.cluster_df_setup(hf.get_total_account_value(api), og_df)
+                        print("-"*50)
 
-                        
                         # Step 3: Divide remaining buying power by # of clusters and distribute equally into them
-                        print('---------------------STEP 3---------------------')
+                        print('---------------------USING EXCESS CASH TO DISTRUBUTE EVENLY---------------------')
                         if float(api.get_account().buying_power) > 15:
                             total_amount_to_distribute = float(api.get_account().buying_power)
                             individual_amount_to_distribute = float(total_amount_to_distribute / num_clusters)
@@ -211,15 +213,16 @@ def main():
                                     try:
                                         # print(f"trying to buy {dollar_trade_amount} worth of {ticker_to_buy}")
                                         hf.execute_trade("buy", round(individual_amount_to_distribute,2), ticker_to_buy, api, notional=True, crypto=crypto)
-                                        tm.sleep(5)
+                                        tm.sleep(2)
                                     except Exception as e:
                                         print(f"Error executing buy order: {e}")
+                        print('-'*50)
                         #setup.send_email('Portfolio Rebalancing Complete', ' ')
-                        print("Rebalancing Complete")
+                        print("***REBALANCING COMPLETE***")
                         current_portfolio_df = setup.Get_current_portfolio_allocation(optimal_portfolio_allocation_info_df, api, crypto)
                         print("---------------------FINAL PORTFOLIO ALLOCATION---------------------")
                         print(current_portfolio_df)
-                        print("---------------------FINAL PORTFOLIO ALLOCATION---------------------") 
+                        print("--------------------------------------------------------------------") 
 
             seconds_left_till_next_reallocation = setup.calculate_seconds_till_next_reallocation(est, hour_to_trade, minute_to_trade)
 

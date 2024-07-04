@@ -2,7 +2,6 @@ import alpaca_trade_api as tradeapi
 import numpy as np
 import os
 from dotenv import load_dotenv
-import JOKR_strat as js
 
 load_dotenv()
 # Alpaca Info
@@ -69,7 +68,7 @@ def execute_trade(action, amount, symbol, api, notional=False, crypto=False):
         elif not notional and crypto == False:
             order = api.submit_order(
                 symbol=str(symbol),
-                qty=int(amount),
+                qty=float(amount),
                 side=action,
                 type='market',
                 time_in_force='day'
@@ -82,10 +81,13 @@ def execute_trade(action, amount, symbol, api, notional=False, crypto=False):
                 type='market',
                 time_in_force='gtc'
             )
-        print(f"Successfully Executed {action} for ${amount} of {symbol}")
+        if notional:
+            print(f"Successfully Executed {action} for ${amount} worth of {symbol}")
+        else:
+            print(f"Successfully Executed {action} for {amount} shares of {symbol}")
         return order
     except Exception as e:
-        print(f"Error executing {action} order: {e}")
+        print(f"Error executing {action} order for {symbol}: {e}")
 
 def get_total_account_value(api):
     account = api.get_account()
@@ -107,4 +109,4 @@ def get_cost_basis(api, symbol):
 
 # symbol = "BTC-USD"
 
-# print(api.get_account().buying_power)
+print(get_market_value(api, 'USDTUSD', crypto=True))
