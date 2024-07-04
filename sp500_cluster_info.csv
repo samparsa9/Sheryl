@@ -1,6 +1,0 @@
-Cluster,Percentage,Dollars In Cluster,Num Stocks,Amount Per Stock,Tickers
-0,0.2,200000.0,1,200000,['BTC-USD']
-1,0.4,400000.0,1,400000,['XRP-USD']
-2,0.2,200000.0,1,200000,['LTC-USD']
-3,0.1,100000.0,1,100000,['ETH-USD']
-4,0.1,100000.0,0,0,[]
