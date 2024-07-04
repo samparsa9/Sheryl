@@ -109,4 +109,4 @@ def get_cost_basis(api, symbol):
 
 # symbol = "BTC-USD"
 
-print(get_market_value(api, 'USDTUSD', crypto=True))
+# print(get_market_value(api, 'USDTUSD', crypto=True))
