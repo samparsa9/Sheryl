@@ -375,7 +375,7 @@ def Is_balanced(current_portfolio_df, api):
         this_cluster_off_by = current_portfolio_df.loc[cluster, "Pct Off From Optimal"]
         if abs(this_cluster_off_by) > abs(largest_pct_off_by):
             largest_pct_off_by = this_cluster_off_by
-    return abs(largest_pct_off_by) < 0.02 #changed threshold
+    return abs(largest_pct_off_by) < 0.03 #changed threshold
 
 def calculate_seconds_till_next_reallocation(timezone, hour_to_trade, minute_to_trade):
                 now = datetime.now(timezone)
@@ -383,6 +383,10 @@ def calculate_seconds_till_next_reallocation(timezone, hour_to_trade, minute_to_
                 if now > target_time:
                     target_time += timedelta(days=1)
                 return int((target_time - now).total_seconds())
+
+
+
+
 def main():
     # location_of_sp500_csv_file = 'Sheryl/sp500_companies.csv'
     # Create_sp500_csv(location_of_sp500_csv_file)

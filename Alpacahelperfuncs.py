@@ -4,15 +4,15 @@ import os
 from dotenv import load_dotenv
 import JOKR_strat as js
 
-# load_dotenv()
-# # Alpaca Info
-# api_key = os.getenv('api_key')
-# api_secret = os.getenv("api_secret")
-# base_url = os.getenv('base_url')
+load_dotenv()
+# Alpaca Info
+api_key = os.getenv('api_key')
+api_secret = os.getenv("api_secret")
+base_url = os.getenv('base_url')
 
 
-# # Initialize Alpaca API
-# api = tradeapi.REST(api_key, api_secret, base_url, api_version='v2')
+# Initialize Alpaca API
+api = tradeapi.REST(api_key, api_secret, base_url, api_version='v2')
 
 def get_available_balance(api, symbol):
     try:
@@ -27,6 +27,7 @@ def get_available_balance(api, symbol):
 def get_market_value(api, ticker, crypto=False):
     try:
         ticker = ticker.replace("-", "") # not sure if this should be here
+        ticker = ticker.replace("/", "")
         position = api.get_position(ticker)
         market_value = float(position.market_value)
         return market_value
@@ -46,6 +47,8 @@ def in_position(api):
         return []
     
 def execute_trade(action, amount, symbol, api, notional=False, crypto=False):
+    symbol = symbol.replace("-", "") # not sure if this should be here
+    symbol = symbol.replace("/", "")
     try:
         if notional and crypto == False:
             order = api.submit_order(
@@ -56,8 +59,6 @@ def execute_trade(action, amount, symbol, api, notional=False, crypto=False):
                 time_in_force='day'
             )
         elif notional and crypto == True:
-            print(f"trade amount is {amount}")
-            # symbol = symbol.replace("-", "") # added this line
             order = api.submit_order(
                 symbol=str(symbol),
                 notional=float(amount),
@@ -65,10 +66,18 @@ def execute_trade(action, amount, symbol, api, notional=False, crypto=False):
                 type='market',
                 time_in_force='gtc'
             )
-        else:
+        elif not notional and crypto == False:
             order = api.submit_order(
                 symbol=str(symbol),
                 qty=int(amount),
+                side=action,
+                type='market',
+                time_in_force='day'
+            )
+        elif not notional and crypto == True:
+            order = api.submit_order(
+                symbol=str(symbol),
+                qty=float(amount),
                 side=action,
                 type='market',
                 time_in_force='gtc'
@@ -80,5 +89,22 @@ def execute_trade(action, amount, symbol, api, notional=False, crypto=False):
 
 def get_total_account_value(api):
     account = api.get_account()
-    return float(account.equity) # Assuming equity represents the total market value of your account
+    return float(account.equity) 
 
+def get_cost_basis(api, symbol):
+    symbol = symbol.replace("-", "") 
+    symbol = symbol.replace("/", "")
+    try:
+        # Retrieve the specific position
+        position = api.get_position(symbol)
+        
+        # Calculate the cost basis
+        cost_basis = float(position.avg_entry_price) * float(position.qty)
+        print(f"Symbol: {symbol}, Cost Basis: ${cost_basis:.2f}")
+    except tradeapi.rest.APIError as e:
+        print(f"Error retrieving position for {symbol}: {e}")
+    return cost_basis
+
+# symbol = "BTC-USD"
+
+# print(api.get_account().buying_power)
