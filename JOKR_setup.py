@@ -94,47 +94,7 @@ def Create_list_of_tickers(dfindex):
     return tickers
 
 
-# def Calculate_features(tickers, df, batch_size=10, crypto=False):
-#     # Fetch historical data for SP500 
-#     sp500_data = yf.download('^GSPC', period='1y')
-#     sp500_data['Market Return'] = sp500_data['Adj Close'].pct_change()
 
-#     # Initialize columns for 200 SMA % Difference and beta value
-#     df['200 SMA % Difference'] = None
-#     df['beta value'] = None
-
-#     # Processing in batches
-#     for i in range(0, len(tickers), batch_size):
-#         batch = tickers[i:i + batch_size]
-#         # Replace "-" with "/" in each string in the batch list
-#         if crypto == True:
-#             batch = [ticker.replace("/", "-") for ticker in batch]
-
-#         # Fetch data for this batch
-#         batch_data = yf.download(batch, period='1y', group_by='ticker')
-
-
-#         for ticker in batch:
-#             ticker_data = batch_data[ticker]
-#             ticker_data.loc[:,'Return'] = ticker_data.loc[:,'Adj Close'].pct_change()
-
-#             # Calculate 200-day SMA and percentage difference
-#             if len(ticker_data) >= 200:
-#                 ticker_data.loc[:, '200 SMA'] = ticker_data.loc[:, 'Adj Close'].rolling(window=200).mean()
-#                 latest_close = ticker_data['Adj Close'].iloc[-1]
-#                 latest_sma = ticker_data['200 SMA'].iloc[-1]
-#                 if latest_sma != 0:  # Avoid division by zero
-#                     percent_diff = ((latest_close - latest_sma) / latest_sma) * 100
-#                     df.loc[ticker, '200 SMA % Difference'] = percent_diff
-
-#             # Calculate beta value
-#             returns = pd.concat([ticker_data['Return'], sp500_data['Market Return']], axis=1).dropna()
-#             if len(returns) > 1:  # Ensure there are enough data points for covariance calculation
-#                 covariance = np.cov(returns['Return'], returns['Market Return'])[0, 1]
-#                 sp500_variance = np.var(returns['Market Return'])
-#                 if sp500_variance != 0:  # Avoid division by zero
-#                     beta = covariance / sp500_variance
-#                     df.loc[ticker, 'beta value'] = beta
 def Calculate_features(tickers, df, batch_size=10, crypto=False):
     # Fetch historical data for SP500 
     sp500_data = yf.download('^GSPC', period='1y')
