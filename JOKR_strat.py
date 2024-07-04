@@ -38,7 +38,7 @@ def main():
     location_of_main_csv_file = 'Sheryl/crypto_data.csv' #Change this to change what symbol we are looking at
 
     # Location of our cluster info dataframe
-    location_of_cluster_csv_file = 'Sheryl/symbol_cluster_info'
+    location_of_cluster_csv_file = 'Sheryl/symbol_cluster_info.csv'
 
     # SET BACK TO 5
     num_clusters = 4 # Use this to specify how many cluster for K-means
