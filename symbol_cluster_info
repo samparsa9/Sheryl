@@ -1,0 +1,5 @@
+Cluster,Percentage,Dollars In Cluster,Num Stocks,Amount Per Stock,Tickers
+0,0.2,202.6,6.0,33.77,"['AAVE-USD', 'BCH-USD', 'DOGE-USD', 'DOT-USD', 'LINK-USD', 'LTC-USD']"
+1,0.4,405.21,6.0,67.54,"['BTC-USD', 'ETH-USD', 'MKR-USD', 'SHIB-USD', 'USDC-USD', 'USDT-USD']"
+2,0.2,202.6,4.0,50.65,"['AVAX-USD', 'BAT-USD', 'CRV-USD', 'XTZ-USD']"
+3,0.2,202.6,2.0,101.3,"['SUSHI-USD', 'UNI-USD']"
