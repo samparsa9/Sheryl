@@ -17,6 +17,12 @@ api_key = os.getenv('api_key')
 api_secret = os.getenv("api_secret")
 base_url = os.getenv('base_url')
 
+# Data directory
+csv_directory = os.getenv('DATA_directory')
+if not csv_directory:
+    raise ValueError("CSV_DIRECTORY environment variable not set")
+# Ensure the directory exists
+os.makedirs(csv_directory, exist_ok=True)
 
 # Initialize Alpaca API
 api = tradeapi.REST(api_key, api_secret, base_url, api_version='v2')
@@ -34,11 +40,6 @@ def main():
     hour_to_trade = int(now.hour) # SET BACK
     minute_to_trade = int(now.minute) # SET BACK
 
-    # Location of our main info dataframe
-    location_of_main_csv_file = 'Sheryl/crypto_data.csv' #Change this to change what symbol we are looking at
-
-    # Location of our cluster info dataframe
-    location_of_cluster_csv_file = 'Sheryl/symbol_cluster_info.csv'
 
     # SET BACK TO 5
     num_clusters = 4 # Use this to specify how many cluster for K-means
@@ -56,10 +57,10 @@ def main():
                 in_position = hf.in_position(api)
 
                 # Running wikapedia scraper to populate initial sp500 csv with ticker symbols of sp500 companies
-                setup.create_crypto_csv(location_of_main_csv_file) #CHANGE THIS BACK FOR SP500
+                setup.create_crypto_csv() #CHANGE THIS BACK FOR SP500
 
                 # Setting our stockdf to be the csv file we just created
-                og_df = pd.read_csv(location_of_main_csv_file, index_col='Symbol')
+                og_df = pd.read_csv(csv_directory + 'crypto_df.csv', index_col='Symbol')
 
                 # Creating our tickers list which we will pass into the Calculate_features function
                 tickers = setup.Create_list_of_tickers(og_df.index)
@@ -77,7 +78,7 @@ def main():
                 setup.Apply_K_means(og_df, scaled_data, num_clusters)
 
                 # Soring the data frame based on cluster value and saving these values to the dataframe, and then updating the csv
-                setup.Sort_and_save(og_df, location_of_main_csv_file)
+                setup.Sort_and_save(og_df, csv_directory + 'crypto_df.csv')
 
                 # Creating a new dataframe that will contain information about the clusters that will be used for trading logic
                 optimal_portfolio_allocation_info_df = setup.cluster_df_setup(hf.get_total_account_value(api), og_df)
@@ -87,7 +88,7 @@ def main():
                 print("-----------------------------------------------------------------------------------------------------------")
 
                 # Save the newsly created cluster df to a csv file
-                setup.Sort_and_save(optimal_portfolio_allocation_info_df, location_of_cluster_csv_file)
+                setup.Sort_and_save(optimal_portfolio_allocation_info_df, csv_directory + 'symbol_cluster_info.csv')
                 
                 # # Plotting cluster data
                 # setup.plot_clusters(stockdf)

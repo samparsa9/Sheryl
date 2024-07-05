@@ -37,6 +37,13 @@ api_key = os.getenv('api_key')
 api_secret = os.getenv("api_secret")
 base_url = os.getenv('base_url')
 
+#CSV location
+csv_directory = os.getenv('DATA_directory')
+if not csv_directory:
+    raise ValueError("CSV_DIRECTORY environment variable not set")
+# Ensure the directory exists
+os.makedirs(csv_directory, exist_ok=True)
+
 #fred info
 # Ensure the urllib uses the certifi certificate bundle
 ssl_context = ssl.create_default_context(cafile=certifi.where())
@@ -44,6 +51,10 @@ ssl_context = ssl.create_default_context(cafile=certifi.where())
 # Set up FRED API key (you need to sign up at https://fred.stlouisfed.org/ to get an API key)
 fred_key = os.getenv('fred_key')
 fred = Fred(api_key=fred_key)
+
+def save_csv(df, filename):
+    file_path = os.path.join(csv_directory, filename)
+    df.to_csv(file_path, index=False)
 
 def send_email(subject, message):
 
@@ -66,7 +77,7 @@ def send_email(subject, message):
         print(f"Failed to send email: {e}")
 
 
-def Create_sp500_csv(file_path):
+def Create_sp500_csv():
     # URL of the Wikipedia page
     url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
 
@@ -84,23 +95,17 @@ def Create_sp500_csv(file_path):
     df = df.drop(columns=["Security", "GICS Sector", "GICS Sub-Industry", "Headquarters Location", "Date added", "CIK", "Founded"])
     df = df.dropna()
     
-    # Ensure directory exists
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
     # # Save the DataFrame to a CSV file for reference
-    df.to_csv(file_path, index=False)
+    save_csv(df, 'sp500_df.csv')
 
-def create_crypto_csv(file_path):
+def create_crypto_csv():
 
     crypto_df = pd.DataFrame({
             "Symbol": ["AAVE/USD","AVAX/USD","BAT/USD","BCH/USD","BTC/USD","CRV/USD","DOGE/USD","DOT/USD","ETH/USD","LINK/USD","LTC/USD","MKR/USD","SHIB/USD","SUSHI/USD","UNI/USD","USDC/USD","USDT/USD","XTZ/USD"]
         })# "GRT/USD"
     
-    # Ensure the directory exists
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-
     # Save the DataFrame to a CSV file
-    crypto_df.to_csv(file_path, index=False)
+    save_csv(crypto_df, 'crypto_df.csv')
 
 
 def Create_list_of_tickers(dfindex):
