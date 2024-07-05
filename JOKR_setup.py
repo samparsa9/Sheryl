@@ -15,7 +15,11 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 import alpaca_trade_api as tradeapi
 import random
-
+from fredapi import Fred
+import certifi
+import ssl
+import urllib.request
+import time as tm
 
 load_dotenv()
 # Email Feature info
@@ -27,6 +31,16 @@ password = os.getenv('email_password')
 api_key = os.getenv('api_key')
 api_secret = os.getenv("api_secret")
 base_url = os.getenv('base_url')
+
+#fred info
+# Ensure the urllib uses the certifi certificate bundle
+ssl_context = ssl.create_default_context(cafile=certifi.where())
+
+# Set up FRED API key (you need to sign up at https://fred.stlouisfed.org/ to get an API key)
+fred_key = os.getenv('fred_key')
+fred = Fred(api_key=fred_key)
+
+
 
 def send_email(subject, message):
 
@@ -77,7 +91,7 @@ def create_crypto_csv(file_path):
 
     crypto_df = pd.DataFrame({
             "Symbol": ["AAVE/USD","AVAX/USD","BAT/USD","BCH/USD","BTC/USD","CRV/USD","DOGE/USD","DOT/USD","ETH/USD","LINK/USD","LTC/USD","MKR/USD","SHIB/USD","SUSHI/USD","UNI/USD","USDC/USD","USDT/USD","XTZ/USD"]
-        })# "GRT/USD" doesnt work for some reason
+        })# "GRT/USD"
     
     # Ensure the directory exists
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -93,14 +107,25 @@ def Create_list_of_tickers(dfindex):
         tickers.append(ticker)
     return tickers
 
-
+def get_list_of_features(df):
+    return df.columns
 
 def Calculate_features(symbols, df, batch_size=10, crypto=False):
     
-
+    
     # Fetch historical data for Bitcoin
     BTC_data = yf.download('BTC-USD', period='1y')    
     BTC_data['Market Return'] = BTC_data['Adj Close'].pct_change()
+
+    # getting treasury data for Sharpe Ratio
+    series_id = 'GS1'
+    treasury_data = fred.get_series(series_id)
+    # Get the latest risk-free rate
+    if not treasury_data.empty:
+        risk_free_rate = treasury_data.iloc[-1] / 100  # Converting to decimal form
+        # print(f"Risk-Free Rate (1-year U.S. Treasury): {risk_free_rate:.4f}")
+    else:
+        print("1-year U.S. Treasury yield data is not available.")
 
     # Processing in batches
     for i in range(0, len(symbols), batch_size):
@@ -119,12 +144,16 @@ def Calculate_features(symbols, df, batch_size=10, crypto=False):
 
                 # Calculate returns
                 ticker_data['Return'] = ticker_data['Adj Close'].pct_change()
+                # Adding volume column
+                df.at[ticker, "Daily $ Volume"] = ticker_data.at[(list(ticker_data.index)[-1]), 'Volume']
 
                 # Calculate 200-day SMA percentage difference, 50-day SMA percentage difference
                 if len(ticker_data) >= 50:
                     ticker_data['50 SMA'] = ticker_data['Adj Close'].rolling(window=50).mean()
                     latest_close = ticker_data['Adj Close'].iloc[-1]
+                    # print(f"Latest close for {ticker} is: {latest_close}")
                     latest_50_sma = ticker_data['50 SMA'].iloc[-1]
+                    # print(f"Latest 50 sma for {ticker} is: {latest_50_sma}")
                     if latest_50_sma != 0:
                         percent_diff_50_sma = ((latest_close - latest_50_sma) / latest_50_sma) * 100
                         df.at[ticker, '50 SMA % Difference'] = percent_diff_50_sma
@@ -151,7 +180,7 @@ def Calculate_features(symbols, df, batch_size=10, crypto=False):
                         percent_diff_200_ema = ((latest_close - latest_200_ema) / latest_200_ema) * 100
                         df.at[ticker, '200 Day EMA % Difference'] = percent_diff_200_ema
 
-                # Calculate beta value
+                # Calculate annualized beta value with respect to btcusd as market return
                 returns = pd.concat([ticker_data['Return'], BTC_data['Market Return']], axis=1).dropna()
                 if len(returns) > 1:  # Ensure there are enough data points for covariance calculation
                     covariance = np.cov(returns['Return'], returns['Market Return'])[0, 1]
@@ -159,14 +188,83 @@ def Calculate_features(symbols, df, batch_size=10, crypto=False):
                     if BTC_variance != 0:  # Avoid division by zero
                         beta = covariance / BTC_variance
                         df.at[ticker, 'Beta value'] = beta
-                
 
+                # Calculate Annualized Sharpe Ratio
+                daily_risk_free_rate = risk_free_rate / 252
+                ticker_data['Excess Return'] = ticker_data['Return'] - daily_risk_free_rate
+
+                mean_excess_return = ticker_data['Excess Return'].mean()
+                std_excess_return = ticker_data['Excess Return'].std()
+
+                if std_excess_return != 0:
+                    sharpe_ratio = (mean_excess_return / std_excess_return) * np.sqrt(252)
+                    df.at[ticker, 'Sharpe Ratio'] = sharpe_ratio
+                    
+                # Volatility
+                df.at[ticker, 'Volatility'] = ticker_data['Return'].std() * np.sqrt(252)
+
+                # Calculating NVT Ratio: (market cap of coin / daily volume)
+                # if crypto:
+                #     # symbol = ticker.replace("-USD", "").lower()
+                #     df.at[ticker, 'Market Cap'] = get_crypto_market_cap(ticker)
+                #     tm.sleep(1)
+                #     df.at[ticker, 'Trading Volume in $'] = ticker_data['Volume'].mean()
+                #     NVT = df.at[ticker, 'Market Cap'] / df.at[ticker, 'Trading Volume in $']
+
+            
+# def get_crypto_market_cap(symbol):
+#     # Map some common cryptocurrency symbols to CoinGecko IDs
+#     symbol_map = {
+#         'BTC-USD': 'bitcoin',
+#         'ETH-USD': 'ethereum',
+#         'AAVE-USD': 'aave',
+#         'AVAX-USD': 'avalanche-2',
+#         'BAT-USD': 'basic-attention-token',
+#         'BCH-USD': 'bitcoin-cash',
+#         'CRV-USD': 'curve-dao-token',
+#         'DOGE-USD': 'dogecoin',
+#         'DOT-USD': 'polkadot',
+#         'LINK-USD': 'chainlink',
+#         'LTC-USD': 'litecoin',
+#         'MKR-USD': 'maker',
+#         'SHIB-USD': 'shiba-inu',
+#         'SUSHI-USD': 'sushi',
+#         'UNI-USD': 'uniswap',
+#         'USDC-USD': 'usd-coin',
+#         'USDT-USD': 'tether',
+#         'XTZ-USD': 'tezos'
+#     }
+    
+#     # Convert to lowercase and look up in the symbol_map
+#     symbol_id = symbol_map.get(symbol.upper())
+#     if not symbol_id:
+#         print(f"Symbol {symbol} not found in the symbol map.")
+#         return None
+
+#     url = f'https://api.coingecko.com/api/v3/coins/{symbol_id}'
+#     retries = 5
+#     for i in range(retries):
+#         try:
+#             response = requests.get(url)
+#             if response.status_code == 200:
+#                 data = response.json()
+#                 return data['market_data']['market_cap']['usd']
+#             else:
+#                 print(f"Failed to fetch market cap for {symbol_id}. HTTP Status code: {response.status_code}")
+#                 if response.status_code == 429:
+#                     # If rate limited, wait before retrying
+#                     tm.sleep(2 ** i)
+#         except Exception as e:
+#             print(f"Error fetching data for {symbol_id}: {e}")
+#             tm.sleep(2 ** i)  # Exponential backoff in case of other errors
+        
+#         return None
 
 def Scale_data(df):
     # Normalize data for clustering
     scaler = StandardScaler()
     # Changed line: Ensure only valid rows are scaled for clustering
-    scaled_data = scaler.fit_transform(df[['200 SMA % Difference', '50 SMA % Difference', '200 Day EMA % Difference','50 Day EMA % Difference', 'Beta value']].dropna())
+    scaled_data = scaler.fit_transform(df[['200 SMA % Difference', '50 SMA % Difference', '200 Day EMA % Difference','50 Day EMA % Difference', 'Beta value', 'Sharpe Ratio']].dropna())
     return scaled_data
 
 
@@ -178,7 +276,7 @@ def Apply_K_means(df, scaled_data, num_clusters=5):
     df['Cluster'] = np.nan
     # Assign clusters only to rows with non-null '200 SMA % Difference' and 'beta value'
     df.loc[df[['200 SMA % Difference', '50 SMA % Difference', '200 Day EMA % Difference',
-               '50 Day EMA % Difference', 'Beta value']].dropna().index, 'Cluster'] = clusters
+               '50 Day EMA % Difference', 'Beta value', 'Sharpe Ratio']].dropna().index, 'Cluster'] = clusters
 
 
 def Sort_and_save(df,file_path):
@@ -197,7 +295,7 @@ def Sort_and_save(df,file_path):
 def plot_clusters(df):
     # Only plot rows with valid values and clusters
     df = df.dropna(subset=['200 SMA % Difference', '50 SMA % Difference', '200 Day EMA % Difference',
-                           '50 Day EMA % Difference', 'Beta value', 'Cluster'])
+                           '50 Day EMA % Difference', 'Beta value', 'Cluster', 'Sharpe Ratio'])
 
     # Create subplots for different feature comparisons
     fig, axs = plt.subplots(3, 2, figsize=(18, 16))
@@ -481,7 +579,7 @@ def main():
     # Dropping any columns that may have resulted in NaN values
     og_df = og_df.dropna()
 
-    print("After dropping na")
+    print("After dropping")
     print(og_df)
     # Creating a scaled_data numpy array that we will pass into our K means algorithm
     scaled_data = Scale_data(og_df)
