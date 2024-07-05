@@ -10,6 +10,7 @@ import pandas as pd
 import JOKR_setup as setup
 import pytz
 import traceback
+import data_collection as dc
 
 load_dotenv()
 # Alpaca Info
@@ -57,7 +58,7 @@ def main():
                 in_position = hf.in_position(api)
 
                 # Running wikapedia scraper to populate initial sp500 csv with ticker symbols of sp500 companies
-                setup.create_crypto_csv() #CHANGE THIS BACK FOR SP500
+                dc.create_crypto_csv() #CHANGE THIS BACK FOR SP500
 
                 # Setting our stockdf to be the csv file we just created
                 og_df = pd.read_csv(csv_directory + 'crypto_df.csv', index_col='Symbol')
@@ -66,7 +67,7 @@ def main():
                 tickers = setup.Create_list_of_tickers(og_df.index)
 
                 # Calculating our features for each ticker and populating the dataframe with these values
-                setup.Calculate_features(tickers, og_df, crypto=crypto)
+                dc.Calculate_features(tickers, og_df, crypto=crypto)
 
                 # Dropping any columns that may have resulted in NaN values
                 og_df = og_df.dropna()
@@ -152,8 +153,8 @@ def main():
                                     ticker_to_sell = ticker_to_sell.replace("-", "")
                                     ticker_to_sell = ticker_to_sell.replace("/", "")
                                     try:
-
-                                        hf.execute_trade("sell", 10, ticker_to_sell, api, notional=True, crypto=crypto)
+                                        amount_to_sell = 10 #hf.get_available_balance(api, ticker_to_sell)
+                                        hf.execute_trade("sell", amount_to_sell, ticker_to_sell, api, notional=True, crypto=crypto)
                                         tm.sleep(2)  # Adjust the sleep time as needed for your platform's settlement time
                                         # print("---------------------NEW PORTFOLIO ALLOCATION---------------------")
                                         # print(current_portfolio_df)
@@ -167,7 +168,9 @@ def main():
                         print('---------------------BUYING UNDERALLOCATED CLUSTERS---------------------')
                         underallocated_df = current_portfolio_df[current_portfolio_df['Pct Off From Optimal'] < 0]
                         for cluster, row in underallocated_df.iterrows():
-                            while abs(current_portfolio_df.loc[cluster, 'Pct Off From Optimal']) > 0.03:
+                            ############################################################################
+                            while abs(current_portfolio_df.loc[cluster, 'Pct Off From Optimal']) > 0.01: # CHANGED THIS NUMBER FROM 0.03 TO 0.01 AND WORKS FLAWLESSELY, COULD MAYBE LEAD TO ERROR
+                            ############################################################################
                                 lowest_market_value = float('inf')
                                 ticker_to_buy = None
                                 for ticker in optimal_portfolio_allocation_info_df.loc[cluster, "Tickers"]:
@@ -182,7 +185,8 @@ def main():
                                     try:
                                         # print(f"trying to buy {dollar_trade_amount} worth of {ticker_to_buy}")
                                         # print(f'Remaining buying power: {api.get_account().buying_power}')
-                                        hf.execute_trade("buy", 10, ticker_to_buy, api, notional=True, crypto=crypto)
+                                        amount_to_buy = 10
+                                        hf.execute_trade("buy", amount_to_buy, ticker_to_buy, api, notional=True, crypto=crypto)
                                         tm.sleep(2)
                                         # print(f'Remaining buying power after purchase: {api.get_account().buying_power}')
                                         # print("---------------------NEW PORTFOLIO ALLOCATION---------------------")
@@ -213,7 +217,8 @@ def main():
                                     ticker_to_buy = ticker_to_buy.replace("/", "")
                                     try:
                                         # print(f"trying to buy {dollar_trade_amount} worth of {ticker_to_buy}")
-                                        hf.execute_trade("buy", round(individual_amount_to_distribute,2), ticker_to_buy, api, notional=True, crypto=crypto)
+                                        amount_to_buy = round(individual_amount_to_distribute,2)
+                                        hf.execute_trade("buy", amount_to_buy, ticker_to_buy, api, notional=True, crypto=crypto)
                                         tm.sleep(2)
                                     except Exception as e:
                                         print(f"Error executing buy order: {e}")
