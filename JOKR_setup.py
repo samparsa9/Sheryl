@@ -20,7 +20,7 @@ import certifi
 import ssl
 import urllib.request
 import time as tm
-
+import seaborn as sns
 load_dotenv()
 # Email Feature info
 sender = os.getenv('sender')
@@ -108,10 +108,9 @@ def Create_list_of_tickers(dfindex):
     return tickers
 
 def get_list_of_features(df):
-    return df.columns
+    return list(df.columns)
 
 def Calculate_features(symbols, df, batch_size=10, crypto=False):
-    
     
     # Fetch historical data for Bitcoin
     BTC_data = yf.download('BTC-USD', period='1y')    
@@ -264,19 +263,20 @@ def Scale_data(df):
     # Normalize data for clustering
     scaler = StandardScaler()
     # Changed line: Ensure only valid rows are scaled for clustering
-    scaled_data = scaler.fit_transform(df[['200 SMA % Difference', '50 SMA % Difference', '200 Day EMA % Difference','50 Day EMA % Difference', 'Beta value', 'Sharpe Ratio']].dropna())
+    scaled_data = scaler.fit_transform(df[get_list_of_features(df)].dropna())
     return scaled_data
 
 
 def Apply_K_means(df, scaled_data, num_clusters=5):
+    feature_list = get_list_of_features(df)
     # Apply K-means clustering
     kmeans = KMeans(n_clusters=num_clusters, random_state=0, n_init=10)
     clusters = kmeans.fit_predict(scaled_data)
     # Initialize the Cluster column with NaN
     df['Cluster'] = np.nan
-    # Assign clusters only to rows with non-null '200 SMA % Difference' and 'beta value'
-    df.loc[df[['200 SMA % Difference', '50 SMA % Difference', '200 Day EMA % Difference',
-               '50 Day EMA % Difference', 'Beta value', 'Sharpe Ratio']].dropna().index, 'Cluster'] = clusters
+    # Assign clusters only to rows with non-null
+    valid_rows = df[feature_list].dropna().index
+    df.loc[valid_rows, 'Cluster'] = clusters
 
 
 def Sort_and_save(df,file_path):
@@ -292,66 +292,30 @@ def Sort_and_save(df,file_path):
 
 
 
-def plot_clusters(df):
-    # Only plot rows with valid values and clusters
-    df = df.dropna(subset=['200 SMA % Difference', '50 SMA % Difference', '200 Day EMA % Difference',
-                           '50 Day EMA % Difference', 'Beta value', 'Cluster', 'Sharpe Ratio'])
-
-    # Create subplots for different feature comparisons
-    fig, axs = plt.subplots(3, 2, figsize=(18, 16))
+def plot_features(df):
+    # Check if 'Cluster' column exists in the DataFrame
+    if 'Cluster' not in df.columns:
+        raise ValueError("DataFrame must contain a 'Cluster' column")
     
-    # Scatter plot for 200 SMA % Difference vs Beta Value
-    scatter1 = axs[0, 0].scatter(df['200 SMA % Difference'], df['Beta value'], c=df['Cluster'], cmap='viridis', alpha=0.6)
-    axs[0, 0].set_title('200 SMA % Difference vs Beta Value with Clusters')
-    axs[0, 0].set_xlabel('200 SMA % Difference')
-    axs[0, 0].set_ylabel('Beta Value')
-    axs[0, 0].grid(True)
+    # Get the list of features excluding the 'Cluster' column
+    features = df.columns.drop('Cluster')
     
-    # Scatter plot for 50 SMA % Difference vs Beta Value
-    scatter2 = axs[0, 1].scatter(df['50 SMA % Difference'], df['Beta value'], c=df['Cluster'], cmap='viridis', alpha=0.6)
-    axs[0, 1].set_title('50 SMA % Difference vs Beta Value with Clusters')
-    axs[0, 1].set_xlabel('50 SMA % Difference')
-    axs[0, 1].set_ylabel('Beta Value')
-    axs[0, 1].grid(True)
-    
-    # Scatter plot for 200 Day EMA % Difference vs Beta Value
-    scatter3 = axs[1, 0].scatter(df['200 Day EMA % Difference'], df['Beta value'], c=df['Cluster'], cmap='viridis', alpha=0.6)
-    axs[1, 0].set_title('200 Day EMA % Difference vs Beta Value with Clusters')
-    axs[1, 0].set_xlabel('200 Day EMA % Difference')
-    axs[1, 0].set_ylabel('Beta Value')
-    axs[1, 0].grid(True)
-    
-    # Scatter plot for 50 Day EMA % Difference vs Beta Value
-    scatter4 = axs[1, 1].scatter(df['50 Day EMA % Difference'], df['Beta value'], c=df['Cluster'], cmap='viridis', alpha=0.6)
-    axs[1, 1].set_title('50 Day EMA % Difference vs Beta Value with Clusters')
-    axs[1, 1].set_xlabel('50 Day EMA % Difference')
-    axs[1, 1].set_ylabel('Beta Value')
-    axs[1, 1].grid(True)
-    
-    # Scatter plot for 200 SMA % Difference vs 50 SMA % Difference
-    scatter5 = axs[2, 0].scatter(df['200 SMA % Difference'], df['50 SMA % Difference'], c=df['Cluster'], cmap='viridis', alpha=0.6)
-    axs[2, 0].set_title('200 SMA % Difference vs 50 SMA % Difference with Clusters')
-    axs[2, 0].set_xlabel('200 SMA % Difference')
-    axs[2, 0].set_ylabel('50 SMA % Difference')
-    axs[2, 0].grid(True)
-
-    # Scatter plot for 200 Day EMA % Difference vs 50 Day EMA % Difference
-    scatter6 = axs[2, 1].scatter(df['200 Day EMA % Difference'], df['50 Day EMA % Difference'], c=df['Cluster'], cmap='viridis', alpha=0.6)
-    axs[2, 1].set_title('200 Day EMA % Difference vs 50 Day EMA % Difference with Clusters')
-    axs[2, 1].set_xlabel('200 Day EMA % Difference')
-    axs[2, 1].set_ylabel('50 Day EMA % Difference')
-    axs[2, 1].grid(True)
-
-    # Add color bar for the scatter plots
-    fig.colorbar(scatter1, ax=axs[0, 0], label='Cluster')
-    fig.colorbar(scatter2, ax=axs[0, 1], label='Cluster')
-    fig.colorbar(scatter3, ax=axs[1, 0], label='Cluster')
-    fig.colorbar(scatter4, ax=axs[1, 1], label='Cluster')
-    fig.colorbar(scatter5, ax=axs[2, 0], label='Cluster')
-    fig.colorbar(scatter6, ax=axs[2, 1], label='Cluster')
-    
-    plt.tight_layout()
+    # Plot correlation heatmap
+    plt.figure(figsize=(10, 8))
+    corr = df[features].corr()
+    sns.heatmap(corr, annot=True, fmt=".2f", cmap="coolwarm", vmin=-1, vmax=1)
+    plt.title("Correlation Heatmap of Features")
     plt.show()
+
+    # Plot pair plot for selected features
+    selected_features = ['Daily $ Volume', '50 SMA % Difference', '200 SMA % Difference', '50 Day EMA % Difference']  # Select top features
+    sns.pairplot(df, vars=selected_features, hue="Cluster", palette="husl", markers=["o", "s", "D", "P", "X"])
+    plt.suptitle("Pair Plot of Selected Features by Cluster", y=1.02)
+    plt.show()
+
+    # Display descriptive statistics
+    print("Descriptive Statistics of Features:")
+    print(df[features].describe().transpose())
 
 
 def cluster_df_setup(starting_cash, stock_df):
@@ -600,8 +564,9 @@ def main():
     # Save the newsly created cluster df to a csv file
     Sort_and_save(optimal_portfolio_allocation_info_df, location_of_cluster_csv_file)
     
+    print(get_list_of_features(og_df))
     # Plotting cluster data
-    plot_clusters(og_df)
+    plot_features(og_df)
     pass
 if __name__ == "__main__":
     main()
