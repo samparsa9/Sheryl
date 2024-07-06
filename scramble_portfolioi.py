@@ -1,5 +1,5 @@
 import os
-import Alpacahelperfuncs as hf
+import src.utils.alpaca_utils as hf
 import alpaca_trade_api as tradeapi
 from dotenv import load_dotenv
 import random
@@ -34,7 +34,7 @@ def throw_off_portfolio(api, sell_count=3, buy_count=3, available_tickers=None, 
         ticker = ticker.replace("/", "")
         amount = 30
 
-        hf.execute_trade('sell', amount, ticker, api, notional=True, crypto=crypto)
+        hf.execute_trade('sell', amount, ticker, notional=True, crypto=crypto)
 
 
     # Randomly select tickers to buy
@@ -48,7 +48,7 @@ def throw_off_portfolio(api, sell_count=3, buy_count=3, available_tickers=None, 
         ticker = ticker.replace("/", "")
         amount = 30  # Define a fixed amount to buy or calculate based on your logic
 
-        hf.execute_trade('buy', amount, ticker, api, notional=True, crypto=crypto)
+        hf.execute_trade('buy', amount, ticker, notional=True, crypto=crypto)
 
 
 def main():

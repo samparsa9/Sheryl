@@ -1,31 +1,23 @@
 import pandas as pd
 import numpy as np
-import yfinance as yf
-import requests
-from bs4 import BeautifulSoup
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import os
-import Alpacahelperfuncs as hf
+import src.utils.alpaca_utils as hf
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from dotenv import load_dotenv
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 import alpaca_trade_api as tradeapi
 import random
-from fredapi import Fred
-import certifi
-import ssl
-import urllib.request
-import time as tm
 import seaborn as sns
 from pyod.models.knn import KNN
 from pyod.models.iforest import IForest
-from pyod.models.auto_encoder import AutoEncoder
 from pyod.models.lof import LOF
 import data_collection as dc
+from google.cloud import storage
 
 load_dotenv()
 # Email Feature info
@@ -374,7 +366,7 @@ def Get_current_portfolio_allocation(optimal_portfolio_allocation_df, api, crypt
         tickers = optimal_portfolio_allocation_df.loc[cluster, "Tickers"]
         for ticker in tickers:
             #print("here is the ticker before its sent to the func: " + ticker)
-            market_value = hf.get_market_value(api, ticker, crypto)
+            market_value = hf.get_market_value(ticker, crypto)
             # print(f"Ticker: {ticker}, Market Value: {market_value}")
             dollars_in_this_cluster += market_value
         # Populating the Dollars In Cluster column with these new values in our current portfolio allocation df
@@ -382,7 +374,7 @@ def Get_current_portfolio_allocation(optimal_portfolio_allocation_df, api, crypt
         # print(f"Cluster {cluster}, Dollars In Cluster: {dollars_in_this_cluster}")
     for cluster in optimal_portfolio_allocation_df.index:
         dollars_in_this_cluster = current_portfolio_allocation.loc[cluster, 'Dollars In Cluster']
-        account_value = hf.get_total_account_value(api)
+        account_value = hf.get_total_account_value()
 
         current_cluster_pct_allocation = (dollars_in_this_cluster / account_value)
         optimal_cluster_pct_allocation = optimal_portfolio_allocation_df.loc[cluster, "Percentage"]
@@ -451,7 +443,7 @@ def Get_most_unoptimized_clusters(optimal_portfolio_allocation_df, current_portf
     tuple_to_return = ((Highest_unoptimal_allocation_cluster, Highest_unoptimal_allocation_pct), (Lowest_unoptimal_allocation_cluster, Lowest_unoptimal_allocation_pct))
     return tuple_to_return
 
-def Is_balanced(current_portfolio_df, api):
+def Is_balanced(current_portfolio_df):
     largest_pct_off_by = 0
     for cluster, row in current_portfolio_df.iterrows():
         this_cluster_off_by = current_portfolio_df.loc[cluster, "Pct Off From Optimal"]
@@ -490,7 +482,7 @@ def throw_off_portfolio(api, sell_count=3, buy_count=3, available_tickers=None, 
         ticker = ticker.replace("/", "")
         amount = 30
 
-        hf.execute_trade('sell', amount, ticker, api, notional=True, crypto=crypto)
+        hf.execute_trade('sell', amount, ticker, notional=True, crypto=crypto)
 
 
     # Randomly select tickers to buy
@@ -504,7 +496,23 @@ def throw_off_portfolio(api, sell_count=3, buy_count=3, available_tickers=None, 
         ticker = ticker.replace("/", "")
         amount = 30  # Define a fixed amount to buy or calculate based on your logic
 
-        hf.execute_trade('buy', amount, ticker, api, notional=True, crypto=crypto)
+        hf.execute_trade('buy', amount, ticker, notional=True, crypto=crypto)
+
+def upload_to_gcs(bucket_name, source_file_name, destination_blob_name):
+    # Path to your service account key file
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'Sheryl/teak-environs-428403-r1-13b20cb353f4.json'
+
+    # Initialize a storage client
+    storage_client = storage.Client()
+
+    # Get the bucket
+    bucket = storage_client.bucket(bucket_name)
+
+    # Create a blob (object) in the bucket
+    blob = bucket.blob(destination_blob_name)
+
+    # Upload the file to the blob
+    blob.upload_from_filename(source_file_name)
 
 
 def main():
@@ -543,8 +551,13 @@ def main():
     # Soring the data frame based on cluster value and saving these values to the dataframe, and then updating the csv
     Sort_and_save(og_df, csv_directory + 'crypto_df.csv')
 
+    # Upload the CSV to Google Cloud Storage
+    bucket_name = 'sherylgcsdatabucket'
+    destination_blob_name = 'Data/crypto_df.csv'
+    upload_to_gcs(bucket_name, csv_directory + 'crypto_df.csv', destination_blob_name)
+
     # Creating a new dataframe that will contain information about the clusters that will be used for trading logic
-    optimal_portfolio_allocation_info_df = cluster_df_setup(hf.get_total_account_value(api), og_df)
+    optimal_portfolio_allocation_info_df = cluster_df_setup(hf.get_total_account_value(), og_df)
 
     print("---------------------OPTIMAL PORTFOLIO ALLOCATION BASED ON TOTAL CURRENT ACCOUNT VALUE---------------------") 
     print(optimal_portfolio_allocation_info_df)
@@ -552,10 +565,12 @@ def main():
 
     # Save the newsly created cluster df to a csv file
     Sort_and_save(optimal_portfolio_allocation_info_df, csv_directory + 'symbol_cluster_info.csv')
+    destination_blob_name = 'Data/symbol_cluster_info.csv'
+    upload_to_gcs(bucket_name, csv_directory + 'symbol_cluster_info.csv', destination_blob_name)
     
-    print(get_list_of_features(og_df))
+    # print(get_list_of_features(og_df))
     # Plotting cluster data
-    plot_features(og_df)
+    # plot_features(og_df)
     pass
 if __name__ == "__main__":
     main()

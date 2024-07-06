@@ -3,28 +3,11 @@ import numpy as np
 import yfinance as yf
 import requests
 from bs4 import BeautifulSoup
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
-import matplotlib.pyplot as plt
 import os
-import Alpacahelperfuncs as hf
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from dotenv import load_dotenv
-from datetime import datetime, timedelta, timezone
-import alpaca_trade_api as tradeapi
-import random
 from fredapi import Fred
 import certifi
 import ssl
-import urllib.request
-import time as tm
-import seaborn as sns
-from pyod.models.knn import KNN
-from pyod.models.iforest import IForest
-from pyod.models.auto_encoder import AutoEncoder
-from pyod.models.lof import LOF
+
 
 #CSV location
 csv_directory = os.getenv('DATA_directory')
