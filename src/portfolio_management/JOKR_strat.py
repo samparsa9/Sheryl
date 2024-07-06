@@ -101,7 +101,7 @@ def main():
                 print("-----------------------------------------------------------------------------------------------------------")
 
                 optimal_portfolio_allocation_info_df= optimal_portfolio_allocation_info_df.sort_values(by='Cluster')
-                optimal_portfolio_allocation_info_df.to_csv(os.path.join(CSV_DIRECTORY, 'optimal_portfolio_info'))
+                optimal_portfolio_allocation_info_df.to_csv(os.path.join(CSV_DIRECTORY, 'optimal_portfolio_info.csv'))
 
                 upload_to_gcs(GCS_BUCKET_NAME, os.path.join(CSV_DIRECTORY, 'optimal_portfolio_info'), 'Data/optimal_portfolio_info')
 
