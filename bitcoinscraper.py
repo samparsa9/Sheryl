@@ -3,8 +3,8 @@ import pandas as pd
 from sqlalchemy import create_engine
 from datetime import datetime
 import time
+from config.settings import DATABASE_URI
 
-DATABASE_URI = 'postgresql+psycopg2://postgres:Shery1J0kerBot456@34.150.254.10:5432/financial_data'
 engine = create_engine(DATABASE_URI)
 
 def fetch_bitcoin_price():

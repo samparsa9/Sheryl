@@ -1,17 +1,18 @@
 import alpaca_trade_api as tradeapi
-
 import numpy as np
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 from config.settings import API_KEY, API_SECRET, BASE_URL
-from dotenv import load_dotenv
 
 # Initialize Alpaca API
 api = tradeapi.REST(API_KEY, API_SECRET, BASE_URL, api_version='v2')
 
-def get_available_balance(symbol):
+def get_available_balance(symbol, crypto=False):
     try:
+        if crypto:
+            symbol = symbol.replace("-", "") 
+            symbol = symbol.replace("/", "")
         position = api.get_position(symbol)
         return float(position.qty)
     except tradeapi.rest.APIError as e:
@@ -107,3 +108,5 @@ def get_cost_basis(symbol):
 def get_buying_power():
     return api.get_account().buying_power
 
+def get_positions():
+    return api.list_positions()
