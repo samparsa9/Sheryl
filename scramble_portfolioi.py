@@ -32,7 +32,7 @@ def throw_off_portfolio(api, sell_count=3, buy_count=3, available_tickers=None, 
         ticker = position.symbol
         ticker = ticker.replace("-", "")  # Remove special characters if needed
         ticker = ticker.replace("/", "")
-        amount = 30
+        amount = 100
 
         hf.execute_trade('sell', amount, ticker, notional=True, crypto=crypto)
 
@@ -46,7 +46,7 @@ def throw_off_portfolio(api, sell_count=3, buy_count=3, available_tickers=None, 
     for ticker in tickers_to_buy:
         ticker = ticker.replace("-", "")  # Remove special characters if needed
         ticker = ticker.replace("/", "")
-        amount = 30  # Define a fixed amount to buy or calculate based on your logic
+        amount = 100  # Define a fixed amount to buy or calculate based on your logic
 
         hf.execute_trade('buy', amount, ticker, notional=True, crypto=crypto)
 

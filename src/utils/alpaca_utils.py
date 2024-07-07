@@ -111,6 +111,9 @@ def get_buying_power():
 def get_positions():
     return api.list_positions()
 
+def get_cash():
+    return api.get_account().cash
+
 def cluster_and_allocation_setup(starting_cash, df, num_clusters, crypto=False):
     portfolio_amount = starting_cash
 

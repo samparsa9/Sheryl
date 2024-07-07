@@ -98,6 +98,8 @@ def main():
 
                 if not in_position:
                     print("We have no positions open, so we will now form our initial optimized portfolio")
+                    print(master_df)
+                    print(master_df.index)
                     # For every cluster
                     for index, row in master_df.iterrows():
                         # Create a list of the tickers
@@ -199,7 +201,7 @@ def main():
                         # Step 3: Divide remaining buying power by # of clusters and distribute equally into them
                         if float(hf.get_buying_power()) > 15:
                             print('---------------------USING EXCESS CASH TO DISTRUBUTE EVENLY---------------------')
-                            total_amount_to_distribute = float(hf.get_buying_power)
+                            total_amount_to_distribute = float(hf.get_cash())
                             individual_amount_to_distribute = float(total_amount_to_distribute / num_clusters)
                             for cluster, row in master_df.iterrows():
                                 lowest_market_value = float('inf')
