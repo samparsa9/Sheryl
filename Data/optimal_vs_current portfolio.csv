@@ -1,0 +1,5 @@
+,Cluster,Op Percentage,Op $ In Cluster,Num Stocks,$ Per Stock,Tickers,Cur Pct Alloc,Pct Off Op,Cur $ In Cluster
+0,0,0.25,2500.0,9.0,277.78,"['ETH-USD', 'BAT-USD', 'BCH-USD', 'BTC-USD', 'CRV-USD', 'DOGE-USD', 'SUSHI-USD', 'SHIB-USD', 'LTC-USD']",0.0,-0.25,0.0
+1,1,0.25,2500.0,2.0,1250.0,"['USDC-USD', 'USDT-USD']",0.0,-0.25,0.0
+2,2,0.25,2500.0,6.0,416.67,"['AAVE-USD', 'LINK-USD', 'DOT-USD', 'AVAX-USD', 'MKR-USD', 'XTZ-USD']",0.0,-0.25,0.0
+3,3,0.25,2500.0,1.0,2500.0,['UNI-USD'],0.0,-0.25,0.0

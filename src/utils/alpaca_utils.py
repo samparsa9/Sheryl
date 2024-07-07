@@ -112,20 +112,26 @@ def get_positions():
     return api.list_positions()
 
 def cluster_and_allocation_setup(starting_cash, df, num_clusters, crypto=False):
+    portfolio_amount = starting_cash
 
     # Setup the initial cluster information dataframe
     cluster_info_df = pd.DataFrame({
         "Cluster": [i for i in range(num_clusters)],
-        "Op Percentage": [1.0 / num_clusters for _ in range(num_clusters)],
+        "Op Percentage": [0.25, 0.25, 0.25, 0.25],
         "Op $ In Cluster": [0.0] * num_clusters,
         "Num Stocks": [0.0] * num_clusters,
         "$ Per Stock": [0.0] * num_clusters,
         "Tickers": [[] for _ in range(num_clusters)]
     })
+    # Ensure the "Op Percentage" column is of float type
+    cluster_info_df["Op Percentage"] = cluster_info_df["Op Percentage"].astype(float)
 
-    # Set the portfolio amount for each cluster
-    cluster_info_df["Op $ In Cluster"] = round((cluster_info_df["Op Percentage"] * starting_cash), 2)
-    cluster_info_df.set_index("Cluster", inplace=True)
+    # Ensure portfolio_amount is a float
+    portfolio_amount = float(portfolio_amount)
+
+    # Perform the calculation and rounding
+    cluster_info_df["Op $ In Cluster"] = round(cluster_info_df["Op Percentage"] * portfolio_amount, 2)
+
 
     # Populate the tickers and number of stocks for each cluster
     for ticker, row in df.iterrows():
@@ -153,13 +159,15 @@ def cluster_and_allocation_setup(starting_cash, df, num_clusters, crypto=False):
     positions = get_positions()
     
     position_data = {position.symbol.replace("-",""): float(position.market_value) for position in positions}
-    print(position_data)
     for cluster in cluster_info_df.index:
         dollars_in_this_cluster = 0.0
         tickers = cluster_info_df.loc[cluster, "Tickers"]
         for ticker in tickers:
             ticker = ticker.replace("-","")
-            market_value = position_data[ticker]
+            try:
+                market_value = position_data[ticker]
+            except:
+                market_value = 0
             dollars_in_this_cluster += market_value
         current_portfolio_allocation.loc[cluster, "Cur $ In Cluster"] = round(dollars_in_this_cluster, 2)
 
