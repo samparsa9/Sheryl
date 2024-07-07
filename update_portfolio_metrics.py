@@ -1,18 +1,14 @@
 from src.utils.alpaca_utils import get_positions, get_total_account_value
-from src.utils.gcs_utils import upload_to_gcs
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, Float, String, ForeignKey, TIMESTAMP
+from sqlalchemy import create_engine, Table, Column, Integer, Float, String, ForeignKey, MetaData, TIMESTAMP
+from sqlalchemy.sql import insert
 from datetime import datetime
-import pandas as pd
 import pytz
 import schedule
 import time
-from config import settings
+from config.settings import DATABASE_URI
 
-DATABASE_URI = 'postgresql+psycopg2://postgres:Shery1J0kerBot456@34.150.254.10:5432/financial_data'
+# Initialize the SQLAlchemy engine
 engine = create_engine(DATABASE_URI)
-
-# Get the current time in EST
-est = pytz.timezone('US/Eastern')
 
 # Define metadata
 metadata = MetaData()
@@ -33,46 +29,52 @@ portfolio_positions = Table('portfolio_positions', metadata,
 # Create tables if they do not exist
 metadata.create_all(engine)
 
+# Get the current time in EST
+est = pytz.timezone('US/Eastern')
+
 def upload_portfolio_metrics_to_db():
     try:
         # Fetch total account value
         total_account_value = get_total_account_value()
+        print(f"Total Account Value: {total_account_value}")
 
         # Insert into portfolio_overview table
-        conn = engine.connect()
-        result = conn.execute(portfolio_overview.insert().values(
-            timestamp=datetime.now(est),
-            total_account_value=total_account_value
-        ))
-        overview_id = result.inserted_primary_key[0]
+        with engine.begin() as conn:  # Use begin() to ensure the transaction is committed
+            result = conn.execute(insert(portfolio_overview).values(
+                timestamp=datetime.now(est),
+                total_account_value=total_account_value
+            ))
+            overview_id = result.inserted_primary_key[0]
+            print(f"Inserted portfolio overview with ID: {overview_id}")
 
-        # Fetch current positions
-        positions = get_positions()
+            # Fetch current positions
+            positions = get_positions()
+            print(f"Fetched {len(positions)} positions")
 
-        # Prepare data for insertion
-        position_data = []
-        for position in positions:
-            data = {
-                'overview_id': overview_id,
-                'symbol': position.symbol,
-                'quantity': float(position.qty),
-                'market_value': float(position.market_value)
-            }
-            position_data.append(data)
+            # Prepare data for insertion
+            position_data = [
+                {
+                    'overview_id': overview_id,
+                    'symbol': position.symbol,
+                    'quantity': float(position.qty),
+                    'market_value': float(position.market_value)
+                }
+                for position in positions
+            ]
 
-        # Insert into portfolio_positions table
-        conn.execute(portfolio_positions.insert(), position_data)
+            print(f"Position Data: {position_data}")
+
+            # Insert into portfolio_positions table using execute for batch insertion
+            conn.execute(portfolio_positions.insert(), position_data)
+            print(f"Inserted {len(position_data)} positions")
+
         print(f"Uploaded portfolio metrics at {datetime.utcnow()}")
-        conn.close()
 
     except Exception as e:
         print(f"Error fetching or uploading portfolio metrics: {e}")
 
-# Schedule the function to run every 5 minutes
-schedule.every(1).minutes.do(upload_portfolio_metrics_to_db)
 
 # Run the schedule
 while True:
-    schedule.run_pending()
+    upload_portfolio_metrics_to_db()
     time.sleep(1)
-
