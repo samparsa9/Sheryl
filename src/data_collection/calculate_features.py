@@ -27,6 +27,7 @@ def calculate_features(symbols, df, fred_api_key, batch_size=10, crypto=False):
 
                 calculate_moving_averages(ticker_data, df, ticker)
                 calculate_beta_sharpe(ticker_data, df, ticker, BTC_data, risk_free_rate)
+                calculate_rsi(ticker_data, df, ticker)
     
 def calculate_moving_averages(ticker_data, df, ticker):
     latest_close = ticker_data['Adj Close'].iloc[-1]
@@ -50,3 +51,13 @@ def calculate_beta_sharpe(ticker_data, df, ticker, BTC_data, risk_free_rate):
     std_excess_return = ticker_data['Excess Return'].std()
     df.at[ticker, 'Sharpe Ratio'] = (mean_excess_return / std_excess_return) * np.sqrt(252) if std_excess_return != 0 else np.nan
     df.at[ticker, 'Volatility'] = ticker_data['Return'].std() * np.sqrt(252)
+
+
+def calculate_rsi(ticker_data, df, ticker):
+# Relative Strength Index (RSI)
+    delta = ticker_data['Adj Close'].diff()
+    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+    RS = gain / loss
+    ticker_data['RSI'] = 100 - (100 / (1 + RS))
+    df.at[ticker, 'RSI'] = ticker_data['RSI'].iloc[-1]

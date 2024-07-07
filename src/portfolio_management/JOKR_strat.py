@@ -1,20 +1,14 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import alpaca_trade_api as tradeapi
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 import time as tm
 import sys
-from dotenv import load_dotenv
 from utils import alpaca_utils as hf
 import pandas as pd
 import pytz
 import traceback
-import data_collection as dc
-from config.settings import CSV_DIRECTORY
 import JOKR_setup as setup
-
-
 import sys
 import os
 
@@ -22,10 +16,9 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 # Import configuration settings
-from config.settings import CSV_DIRECTORY, FRED_KEY, SENDER_EMAIL, EMAIL_PASSWORD, GCS_BUCKET_NAME
+from config.settings import CSV_DIRECTORY, FRED_KEY, GCS_BUCKET_NAME
 
 # Import utility functions
-from utils.email_utils import send_email
 from utils.gcs_utils import upload_to_gcs
 
 # Import data collection functions
@@ -179,7 +172,7 @@ def main():
                         underallocated_df = current_portfolio_df[current_portfolio_df['Pct Off From Optimal'] < 0]
                         for cluster, row in underallocated_df.iterrows():
                             ############################################################################
-                            while abs(current_portfolio_df.loc[cluster, 'Pct Off From Optimal']) > 0.015: # CHANGED THIS NUMBER FROM 0.03 TO 0.015 AND WORKS FLAWLESSELY, COULD MAYBE LEAD TO ERROR
+                            while abs(current_portfolio_df.loc[cluster, 'Pct Off From Optimal']) > 0.03: # CHANGED THIS NUMBER FROM 0.03 TO 0.015 AND WORKS FLAWLESSELY, COULD MAYBE LEAD TO ERROR
                                 # Did BARELY lead to an error, upped it a tiny bit
                             ############################################################################
                                 lowest_market_value = float('inf')
