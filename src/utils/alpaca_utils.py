@@ -1,5 +1,5 @@
 import alpaca_trade_api as tradeapi
-import numpy as np
+import pandas as pd
 import os
 import sys
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
@@ -110,3 +110,70 @@ def get_buying_power():
 
 def get_positions():
     return api.list_positions()
+
+def cluster_and_allocation_setup(starting_cash, df, num_clusters, crypto=False):
+
+    # Setup the initial cluster information dataframe
+    cluster_info_df = pd.DataFrame({
+        "Cluster": [i for i in range(num_clusters)],
+        "Op Percentage": [1.0 / num_clusters for _ in range(num_clusters)],
+        "Op $ In Cluster": [0.0] * num_clusters,
+        "Num Stocks": [0.0] * num_clusters,
+        "$ Per Stock": [0.0] * num_clusters,
+        "Tickers": [[] for _ in range(num_clusters)]
+    })
+
+    # Set the portfolio amount for each cluster
+    cluster_info_df["Op $ In Cluster"] = round((cluster_info_df["Op Percentage"] * starting_cash), 2)
+    cluster_info_df.set_index("Cluster", inplace=True)
+
+    # Populate the tickers and number of stocks for each cluster
+    for ticker, row in df.iterrows():
+        cluster = row["Cluster"]
+        cluster_info_df.loc[cluster, "Tickers"].append(ticker)
+        cluster_info_df.loc[cluster, "Num Stocks"] += 1
+
+    for cluster, row in cluster_info_df.iterrows():
+        # Calculate the amount per stock for each cluster
+        if cluster_info_df.loc[cluster, "Num Stocks"] > 0:
+            cluster_info_df.loc[cluster, "$ Per Stock"] = round((cluster_info_df.loc[cluster, "Op $ In Cluster"] / cluster_info_df.loc[cluster, "Num Stocks"]), 2)
+        else:
+            cluster_info_df.loc[cluster, "$ Per Stock"] = 0  # Avoid division by zero
+
+    # Setup the current portfolio allocation dataframe
+    current_portfolio_allocation = pd.DataFrame({
+        "Cluster": [i for i in range(num_clusters)],
+        "Cur Pct Alloc": [0.0] * num_clusters,
+        "Pct Off Op": [0.0] * num_clusters,
+        "Cur $ In Cluster": [0.0] * num_clusters
+    })
+    current_portfolio_allocation.set_index("Cluster", inplace=True)
+
+    # Calculate the current dollar allocation in each cluster
+    positions = get_positions()
+    
+    position_data = {position.symbol.replace("-",""): float(position.market_value) for position in positions}
+    print(position_data)
+    for cluster in cluster_info_df.index:
+        dollars_in_this_cluster = 0.0
+        tickers = cluster_info_df.loc[cluster, "Tickers"]
+        for ticker in tickers:
+            ticker = ticker.replace("-","")
+            market_value = position_data[ticker]
+            dollars_in_this_cluster += market_value
+        current_portfolio_allocation.loc[cluster, "Cur $ In Cluster"] = round(dollars_in_this_cluster, 2)
+
+    # Calculate the percentage allocation and the deviation from the optimal allocation
+    account_value = get_total_account_value()
+    for cluster in cluster_info_df.index:
+        dollars_in_this_cluster = current_portfolio_allocation.loc[cluster, 'Cur $ In Cluster']
+        current_cluster_pct_allocation = (dollars_in_this_cluster / account_value)
+        optimal_cluster_pct_allocation = cluster_info_df.loc[cluster, "Op Percentage"]
+
+        current_portfolio_allocation.loc[cluster, "Cur Pct Alloc"] = current_cluster_pct_allocation
+        current_portfolio_allocation.loc[cluster, "Pct Off Op"] = current_cluster_pct_allocation - optimal_cluster_pct_allocation
+
+    # Combine the optimal and current allocation dataframes
+    combined_df = cluster_info_df.join(current_portfolio_allocation)
+
+    return combined_df

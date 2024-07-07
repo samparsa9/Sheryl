@@ -14,17 +14,6 @@ sender = os.getenv('sender')
 recipient = os.getenv('sender')
 password = os.getenv('email_password')
 
-# Alpaca Info
-api_key = os.getenv('api_key')
-api_secret = os.getenv("api_secret")
-base_url = os.getenv('base_url')
-
-# Data directory
-csv_directory = os.getenv('DATA_directory')
-if not csv_directory:
-    raise ValueError("CSV_DIRECTORY environment variable not set")
-# Ensure the directory exists
-os.makedirs(csv_directory, exist_ok=True)
 
 def send_email(subject, message):
 
