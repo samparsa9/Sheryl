@@ -9,7 +9,7 @@ from src.data_collection.calculate_features import calculate_features
 from src.data_processing.scaler import scale_data
 from src.data_processing.k_means_cluster import apply_k_means
 from src.utils.alpaca_utils import cluster_and_allocation_setup
-from src.data_visualization.plotting import plot_features, plot_features_1, plot_features_2
+from src.data_visualization.plotting import plot_features, plot_features_1, plot_features_2, plot_features_interactive
 
 def main():
     os.makedirs(CSV_DIRECTORY, exist_ok=True)
@@ -37,7 +37,7 @@ def main():
     new_df = cluster_and_allocation_setup(1000, df, 4, True)
 
     print(new_df)
-    plot_features(new_df)
+    plot_features_interactive(df)
 
     #upload_to_gcs(GCS_BUCKET_NAME, os.path.join(CSV_DIRECTORY, 'processed_data.csv'), 'Data/processed_data.csv')
 
