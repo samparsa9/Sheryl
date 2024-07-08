@@ -8,3 +8,8 @@ scikit-learn
 matplotlib
 python-dotenv
 pytz
+fredapi
+sqlalchemy
+schedule
+psycopg2
+django
