@@ -11,5 +11,4 @@ pytz
 fredapi
 sqlalchemy
 schedule
-psycopg2
 django

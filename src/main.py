@@ -8,7 +8,6 @@ from src.data_collection.crypto_scraper import create_crypto_csv
 from src.data_collection.calculate_features import calculate_features
 from src.data_processing.scaler import scale_data
 from src.data_processing.k_means_cluster import apply_k_means
-from src.data_visualization import plotting
 from src.utils.alpaca_utils import cluster_and_allocation_setup
 
 def main():

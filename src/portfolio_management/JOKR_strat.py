@@ -18,8 +18,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')
 # Import configuration settings
 from config.settings import CSV_DIRECTORY, FRED_KEY, GCS_BUCKET_NAME
 
-# Import utility functions
-from utils.gcs_utils import upload_to_gcs
 
 # Import data collection functions
 from data_collection.calculate_features import calculate_features
