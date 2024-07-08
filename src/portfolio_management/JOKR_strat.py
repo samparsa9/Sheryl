@@ -152,7 +152,7 @@ def main():
                                     ticker_to_sell = ticker_to_sell.replace("-", "")
                                     ticker_to_sell = ticker_to_sell.replace("/", "")
                                     try:
-                                        amount_to_sell = 100 #hf.get_available_balance(api, ticker_to_sell)
+                                        amount_to_sell = 50 #hf.get_available_balance(api, ticker_to_sell)
                                         hf.execute_trade("sell", amount_to_sell, ticker_to_sell, notional=True, crypto=crypto)
                                         tm.sleep(2)  # Adjust the sleep time as needed for your platform's settlement time
                                         # print("---------------------NEW PORTFOLIO ALLOCATION---------------------")
@@ -184,7 +184,7 @@ def main():
                                     try:
                                         # print(f"trying to buy {dollar_trade_amount} worth of {ticker_to_buy}")
                                         # print(f'Remaining buying power: {api.get_account().buying_power}')
-                                        amount_to_buy = 100
+                                        amount_to_buy = 50
                                         hf.execute_trade("buy", amount_to_buy, ticker_to_buy, notional=True, crypto=crypto)
                                         tm.sleep(2)
                                         # print(f'Remaining buying power after purchase: {api.get_account().buying_power}')

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Overview</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .table th, .table td {
+            text-align: center;
+        }
+        .btn-view {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-view:hover {
+            background-color: #0056b3;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Chart Container moved to the top -->
+        <div class="container my-4">
+            <h2 class="text-center">Total Account Value Over Time</h2>
+            <canvas id="valueChart"></canvas>
+        </div>
+
+        <h1 class="text-center">Portfolio Overview</h1>
+        <table id="overview-table" class="table table-striped table-bordered">
+            <thead class="thead-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Timestamp</th>
+                    <th>Total Account Value</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+
+        <h1 class="text-center">Portfolio Positions</h1>
+        <table id="positions-table" class="table table-striped table-bordered">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Overview ID</th>
+                    <th>Position ID</th>
+                    <th>Symbol</th>
+                    <th>Quantity</th>
+                    <th>Market Value</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Data will be inserted here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $.getJSON('/portfolio-overview', function(data) {
+                let overviewTable = $('#overview-table tbody');
+                let chartLabels = [];
+                let chartData = [];
+                
+                data.forEach(item => {
+                    let row = `<tr>
+                        <td>${item.id}</td>
+                        <td>${item.timestamp}</td>
+                        <td>${item.total_account_value}</td>
+                        <td><button class="btn btn-view" data-id="${item.id}">View Positions</button></td>
+                    </tr>`;
+                    overviewTable.append(row);
+                    
+                    // Prepare chart data
+                    chartLabels.push(item.timestamp);
+                    chartData.push(item.total_account_value);
+                });
+        
+                // Check if data is loaded
+                if (chartData.length > 0) {
+                    renderChart(chartLabels, chartData);
+                } else {
+                    console.log('No data available for chart');
+                }
+            });
+    
+            // Delegated event binding for dynamically created buttons
+            $('#overview-table').on('click', '.btn-view', function() {
+                const overviewId = $(this).data('id');
+                fetchPositions(overviewId);
+            });
+        });
+    
+        function fetchPositions(overviewId) {
+    $.getJSON(`/portfolio-positions/${overviewId}`, function(data) {
+        let positionsTable = $('#positions-table tbody');
+        positionsTable.empty(); // Clear previous positions
+
+        console.log("Received data for positions:", data); // Debugging line
+
+        data.forEach(item => {
+            console.log("Processing item:", item); // Debugging line
+            let row = `<tr>
+                <td>${item.position_id}</td>
+                <td>${item.symbol}</td>
+                <td>${item.quantity}</td>
+                <td>${item.market_value || 'N/A'}</td>  <!-- Show 'N/A' if market_value is undefined -->
+            </tr>`;
+            positionsTable.append(row);
+        });
+    }).fail(function(jqXHR, textStatus, errorThrown) {
+        console.log("Error fetching positions:", textStatus, errorThrown); // Error handling
+    });
+}
+
+    
+        function renderChart(labels, data) {
+            var ctx = document.getElementById('valueChart').getContext('2d');
+            var valueChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Account Value',
+                        data: data,
+                        borderColor: '#007bff',
+                        fill: false
+                    }]
+                },
+                options: {
+                    scales: {
+                        xAxes: [{
+                            type: 'time',
+                            time: {
+                                unit: 'day'
+                                },
+                            distribution: 'linear'
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                beginAtZero: true
+                            }
+                        }]
+                    }
+                }
+            });
+        }
+    </script>
+    
+
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
