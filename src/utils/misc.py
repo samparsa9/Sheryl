@@ -1,39 +1,4 @@
-import pandas as pd
-import os
-import src.utils.alpaca_utils as hf
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from dotenv import load_dotenv
 from datetime import datetime, timedelta
-
-load_dotenv()
-# Email Feature info
-sender = os.getenv('sender')
-recipient = os.getenv('sender')
-password = os.getenv('email_password')
-
-
-def send_email(subject, message):
-
-    msg = MIMEMultipart()
-    msg['From'] = sender
-    msg['To'] = recipient
-    msg['Subject'] = subject
-
-    msg.attach(MIMEText(message, 'plain'))
-
-    try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(sender, password)
-        text = msg.as_string()
-        server.sendmail(sender, recipient, text)
-        server.quit()
-        # print('Email sent')
-    except Exception as e:
-        print(f"Failed to send email: {e}")
-
 
 def Is_balanced(current_portfolio_df):
     largest_pct_off_by = 0

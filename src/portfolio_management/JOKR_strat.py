@@ -8,7 +8,7 @@ from utils import alpaca_utils as hf
 import pandas as pd
 import pytz
 import traceback
-import JOKR_setup as setup
+import src.utils.misc as setup
 import sys
 import os
 

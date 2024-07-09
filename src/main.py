@@ -41,7 +41,7 @@ def main():
 
     #upload_to_gcs(GCS_BUCKET_NAME, os.path.join(CSV_DIRECTORY, 'processed_data.csv'), 'Data/processed_data.csv')
 
-    #send_email(SENDER_EMAIL, SENDER_EMAIL, 'ETL Process Complete', 'The ETL process has been successfully completed.', EMAIL_PASSWORD)
+    # send_email(SENDER_EMAIL, SENDER_EMAIL, 'ETL Process Complete', 'The ETL process has been successfully completed.', EMAIL_PASSWORD)
 
 if __name__ == "__main__":
     main()
