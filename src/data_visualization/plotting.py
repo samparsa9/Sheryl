@@ -323,7 +323,6 @@ def plot_features_interactive(df):
     fig_cluster_heatmap = px.imshow(cluster_means.set_index('Cluster').T, text_auto=True, aspect="auto", title="Heatmap of Mean Feature Values by Cluster")
     fig_cluster_heatmap.show()
 
-import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots

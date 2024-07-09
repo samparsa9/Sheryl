@@ -27,7 +27,8 @@
     Is_balanced: Checks if current portfolio is balanced within a specified threshold.
     calculate_seconds_till_next_reallocation: Calculates seconds until the next reallocation time based on specified trade hour and minute.
 ## main.py
-  ### Python script to orchestrate the entire pipeline:
+  ### Python script to orchestrate the entire pipeline (seperate from trading algorithm, only sets up
+  ### the current vs optimal portfolio dataframe and plots relevant data related to K-means algorithm):
     Imports necessary modules and configurations.
     Executes data scraping (cryptocurrency or S&P 500), feature calculation, data scaling, K-Means clustering, and portfolio setup.
     Utilizes interactive plotting for visualization.

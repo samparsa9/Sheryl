@@ -9,6 +9,8 @@ load_dotenv()
 sender = os.getenv('sender')
 recipient = os.getenv('sender')
 password = os.getenv('email_password')
+
+# Function that is used to send email notifications regarding the status of the algorithm
 def send_email(subject, message):
 
     msg = MIMEMultipart()

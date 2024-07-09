@@ -8,7 +8,8 @@ from config.settings import API_KEY, API_SECRET, BASE_URL
 # Initialize Alpaca API
 api = tradeapi.REST(API_KEY, API_SECRET, BASE_URL, api_version='v2')
 
-def get_available_balance(symbol, crypto=False):
+# This function will tell you how many shares you have of any particular symbol in your portfolio
+def get_available_shares(symbol, crypto=False):
     try:
         if crypto:
             symbol = symbol.replace("-", "") 
@@ -16,22 +17,26 @@ def get_available_balance(symbol, crypto=False):
         position = api.get_position(symbol)
         return float(position.qty)
     except tradeapi.rest.APIError as e:
+        # If throws an error, means you dont have any of that particular symbol, so returns 0
         if e.status_code == 404:
             return 0.0
         else:
             raise e
 
+# This function will tell you the market value of all the shares of a symbol in your portfolio
 def get_market_value(ticker, crypto=False):
     try:
-        ticker = ticker.replace("-", "") # not sure if this should be here
+        ticker = ticker.replace("-", "") 
         ticker = ticker.replace("/", "")
         position = api.get_position(ticker)
         market_value = float(position.market_value)
         return market_value
     except Exception as e:
+        # Error means its not in your portfolio, so returns 0
         print(f"Failed to get market value for ticker '{ticker}': {e}")
         return 0
 
+# Function that returns a boolean stating whether we are or are not in any positions
 def in_position():
     try:
         positions = api.list_positions()
@@ -43,8 +48,9 @@ def in_position():
         print("Error fetching positions: {e}")
         return []
     
+# Function that is used to execute trades through Alpaca
 def execute_trade(action, amount, symbol, notional=False, crypto=False):
-    symbol = symbol.replace("-", "") # not sure if this should be here
+    symbol = symbol.replace("-", "") 
     symbol = symbol.replace("/", "")
     try:
         if notional and crypto == False:
@@ -87,10 +93,12 @@ def execute_trade(action, amount, symbol, notional=False, crypto=False):
     except Exception as e:
         print(f"Error executing {action} order for {symbol}: {e}")
 
+# Gets the cumulative portfolio value of your Alpaca account
 def get_total_account_value():
     account = api.get_account()
     return float(account.equity) 
 
+# Returns the cost basis of a symbol that is passed in
 def get_cost_basis(symbol):
     symbol = symbol.replace("-", "") 
     symbol = symbol.replace("/", "")
@@ -105,15 +113,20 @@ def get_cost_basis(symbol):
         print(f"Error retrieving position for {symbol}: {e}")
     return cost_basis
 
+# Returns how much buying power you have in your account
 def get_buying_power():
     return api.get_account().buying_power
 
+# Returns a list of position information regarding all of your current holdings
 def get_positions():
     return api.list_positions()
 
+# Returns how much cash you have left in your account
 def get_cash():
     return api.get_account().cash
 
+# Function for retreiving your current portfolio allocations from alpaca and putting them in a dataframe
+# with the optimal portfolio allocations as stated by the k means clustering algorithm
 def cluster_and_allocation_setup(starting_cash, df, num_clusters, crypto=False):
     portfolio_amount = starting_cash
 

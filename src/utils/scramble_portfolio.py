@@ -10,6 +10,9 @@ api_key = os.getenv('api_key')
 api_secret = os.getenv("api_secret")
 base_url = os.getenv('base_url')
 
+# This function was mainly used for debugging, running this function sells $300 worth of 3 random tickers,
+# and buys $300 worth of 3 random tickers. This allows us to run this function and then JOKR_strat to see
+# if our algorithm works correctly
 def throw_off_portfolio(api, sell_count=3, buy_count=3, available_tickers=None, crypto=False):
     """
     Randomly sells a number of tickers from the current portfolio and buys a number of new random tickers.
