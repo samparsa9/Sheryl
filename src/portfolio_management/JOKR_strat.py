@@ -21,8 +21,6 @@ from data_processing.scaler import scale_data
 from data_processing.k_means_cluster import apply_k_means
 
 
-
-
 def main():
     ############ STATIC STUFF AMONG ITERATIONS ################
     ############ ONLY BEING RUN FIRST TIME WE EVER LAUNCH ALGO #############
@@ -251,5 +249,4 @@ def main():
     
 
 if __name__ == "__main__":
-    # market_value = hf.get_market_value(api, 'LTC-USD', crypto=True)
     main()
