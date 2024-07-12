@@ -1,6 +1,6 @@
 import pandas as pd
-# from sklearn.cluster import KMeans
-from .k_means_clustering import KMeans
+from sklearn.cluster import KMeans
+# from .k_means_clustering import KMeans
 
 # Function to apply k means clustering algorithm from sci-kit learn to the scaled data and add a cluster column
 # to the dataframe passed in to specify the cluster for each symbol in the df
