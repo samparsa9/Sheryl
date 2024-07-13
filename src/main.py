@@ -52,7 +52,7 @@ def main():
 
     print(new_df)
     # Generate interactive plots for the processed data
-    #plot_features_interactive(df)
+    plot_features_interactive(df)
 
 
     # send_email(SENDER_EMAIL, SENDER_EMAIL, 'ETL Process Complete', 'The ETL process has been successfully completed.', EMAIL_PASSWORD)
