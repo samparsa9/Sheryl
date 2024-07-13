@@ -1,0 +1,15 @@
+1. Binomial Option Pricing Model
+2. Black-Scholes
+3. Monte Carlo Simulation
+4. Value at Risk
+5. Vasicek Model
+6. Hull-White Model
+7. Merton Jump-Diffusion Model
+8. Copulas
+
+
+Others
+- Heston Model
+- GARCH Model
+- Cox-Ingersoll-Ross (CIR) Model (similar to Vasicek)
+- Local Volatility Models (extension of Black-Scholes)
