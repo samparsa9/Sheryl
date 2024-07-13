@@ -9,6 +9,5 @@ def apply_k_means(df, scaled_data, num_clusters):
     # clusters = kmeans.fit_predict(scaled_data)
     # df['Cluster'] = pd.Series(clusters, index=df.index)
     kmeans = KMeans(num_clusters)
-    print(f"Scaled_data: {scaled_data}")
     clusters = kmeans.fit(scaled_data)
     df['Cluster'] = pd.Series(clusters,index = df.index )

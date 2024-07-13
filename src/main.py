@@ -17,7 +17,7 @@ def main():
     # Ensure the CSV directory exists, create it if it does not
     os.makedirs(CSV_DIRECTORY, exist_ok=True)
     # Flag to determine whether to process cryptocurrency data or S&P 500 data
-    crypto = True
+    crypto = False
 
     if crypto:
         # Create a CSV file containing cryptocurrency data
