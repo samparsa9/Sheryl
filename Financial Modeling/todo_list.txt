@@ -1,5 +1,5 @@
 1. Binomial Option Pricing Model (For European Options)         Done 
-2. Black-Scholes
+2. Black-Scholes                                                Done
 3. Monte Carlo Simulation
 4. Value at Risk
 5. Vasicek Model

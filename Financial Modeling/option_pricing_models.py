@@ -5,17 +5,19 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy import random
+from scipy.stats import norm
 # Initializing parameters
 S0 = 100        # Current stock price
 K = 100         # Strike price of the option
 T = 1           # Time to maturity in years
-# sigma = 0.2     # Volatility of stock (annualized standard deviation of the stock's returns)
-# r = 0.06        # Annual risk-free rate
-N = 1000           # Number of time steps
+sigma = 0.2     # Volatility of stock (annualized standard deviation of the stock's returns)
+r = 0.06        # Annual risk-free rate
+N = 1000        # Number of time steps
 
 option_type = 'C' # C to represent a call, P to represent a put
 
-def calculate_derivative_price(S0, K, T, sigma, r, N, opttype='C'):
+def binomial_option_pricing_model(S0, K, T, sigma, r, N, opttype='C'):
     # At each step in the tree, the price can move up or down by a factor of u or d respectively
     delta_t = T / N
     u = np.exp(sigma * np.sqrt(delta_t))
@@ -63,33 +65,32 @@ r_list =          [0.0,0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1]
 
 option_prices = np.zeros((len(volatility_list), len(r_list)))
 
-for i, sigma in enumerate(volatility_list):
-    for j, r in enumerate(r_list):
-        to_set = calculate_derivative_price(S0, K, T, sigma, r, N)
-        print(to_set)
-        option_prices[i,j] = to_set
-
-harvest = np.array([[0.8, 2.4, 2.5, 3.9, 0.0, 4.0, 0.0],
-                    [2.4, 0.0, 4.0, 1.0, 2.7, 0.0, 0.0],
-                    [1.1, 2.4, 0.8, 4.3, 1.9, 4.4, 0.0],
-                    [0.6, 0.0, 0.3, 0.0, 3.1, 0.0, 0.0],
-                    [0.7, 1.7, 0.6, 2.6, 2.2, 6.2, 0.0],
-                    [1.3, 1.2, 0.0, 0.0, 0.0, 3.2, 5.1],
-                    [0.1, 2.0, 0.0, 1.4, 0.0, 1.9, 6.3]])
+# for i, sigma in enumerate(volatility_list):
+#     for j, r in enumerate(r_list):
+#         to_set = binomial_option_pricing_model(S0, K, T, sigma, r, N)
+#         print(to_set)
+#         option_prices[i,j] = to_set
 
 
-# Plotting the heatmap
-# Plotting the heatmap
-plt.figure(figsize=(10, 8))
-plt.imshow(option_prices, extent=[r_list[0], r_list[-1], volatility_list[0], volatility_list[-1]], origin='lower', aspect='auto', cmap='viridis')
-plt.colorbar(label='Option Price')
-plt.xlabel('Risk-Free Rate')
-plt.ylabel('Volatility')
-plt.title('Heatmap of Option Prices')
-plt.grid(True, linestyle='--', linewidth=0.5)
 
-# Add contour lines
-contours = plt.contour(option_prices, colors='white', origin='lower', extent=[r_list[0], r_list[-1], volatility_list[0], volatility_list[-1]])
-plt.clabel(contours, inline=True, fontsize=8, colors='white')
 
-plt.show()
+# plt.figure(figsize=(10, 8))
+# plt.imshow(option_prices, extent=[r_list[0], r_list[-1], volatility_list[0], volatility_list[-1]], origin='lower', aspect='auto', cmap='viridis')
+# plt.colorbar(label='Option Price')
+# plt.xlabel('Risk-Free Rate')
+# plt.ylabel('Volatility')
+# plt.title('Heatmap of Option Prices')
+# plt.grid(True, linestyle='--', linewidth=0.5)
+
+# # Add contour lines
+# contours = plt.contour(option_prices, colors='white', origin='lower', extent=[r_list[0], r_list[-1], volatility_list[0], volatility_list[-1]])
+# plt.clabel(contours, inline=True, fontsize=8, colors='white')
+
+# plt.show()
+
+def black_scholes_model(K, S0, T, r, sigma, opttype='C'):
+    d1 = (np.log(S0 / K) + (r + ((sigma ** 2))/2)*T) / sigma * np.sqrt(T)
+    d2 = (np.log(S0 / K) + (r - ((sigma ** 2))/2)*T) / sigma * np.sqrt(T)
+    return (S0 * norm.cdf(d1)) - (K*(np.exp(-1*r*T)*norm.cdf(d2)))
+
+print(black_scholes_model(100, 100, 1, 0.05, 0.20))
