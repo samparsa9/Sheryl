@@ -1,0 +1,33 @@
+Arbitrage: Risk free profit
+- Type 1: Putting up zero investment and have chance to increase returns
+- Type 2: Receive initial credit, and have no risk of losing money
+
+- V = initial investment
+
+Type 1
+- V0 = 0 : we are putting up no initial capital
+- P(VT >= 0) = 1 : at terminal time, we have a 0% chance of losing money
+- P(VT > 0) > 0 : at terminal time, there is a chance that we make money
+
+Type 2
+- V0 < 0 : we are receiving a credit
+- P(VT >= 0) = 1 : at terminal time, we have a 0% chance of losing the credit
+
+Law of One Price
+- Say we have two portfolio, portfolio a and portfolio Bayes
+- P(VTa = VTb) = 1, then V0a = V0b : if at terminal time, we know that the value of the two portfolios will be the same, then their values at time 0 will be the same
+
+One Period Binomial Model Distribution
+- We have two time states, t=0, representing current state, and t = T representing terminal state
+- At t = 0, we have the C0, the derivative we are trying to price, S0, the stock price related to the derivative, and B0, value of money invested under a risk free rate
+- Possibility 1 : 
+    - S increases with probability u 
+    - at t=T, Cu = max(0, uS0-k), where k is the strike price of the derivative
+    - Su = uS0
+    - BT = e^(rT)
+- Possibility 2 : 
+    - S decreases with probability a 
+    - at t=T, Ca = max(0, aS0-k)
+    - Sa = aS0
+    - BT = e^(rT)
+    
