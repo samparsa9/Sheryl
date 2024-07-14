@@ -7,56 +7,58 @@ import numpy as np
 import matplotlib.pyplot as plt
 from numpy import random
 from scipy.stats import norm
-# Initializing parameters
-S0 = 100        # Current stock price
-K = 100         # Strike price of the option
-T = 1           # Time to maturity in years
-sigma = 0.2     # Volatility of stock (annualized standard deviation of the stock's returns)
-r = 0.06        # Annual risk-free rate
-N = 1000        # Number of time steps
 
-option_type = 'C' # C to represent a call, P to represent a put
-
-def binomial_option_pricing_model(S0, K, T, sigma, r, N, opttype='C'):
-    # At each step in the tree, the price can move up or down by a factor of u or d respectively
-    delta_t = T / N
-    u = np.exp(sigma * np.sqrt(delta_t))
-    d = np.exp(-1 * sigma * np.sqrt(delta_t))
-    # Calculating risk neutral probability
-    P = ((np.exp(r*delta_t) - d)) / (u - d)
-
-    stock_price_tree = []
-    derivative_price_tree = []
-    for level_in_tree in range(1,N+2):
-        stock_price_tree.append([0 for _ in range(0, level_in_tree)])
-        derivative_price_tree.append([0 for _ in range(0, level_in_tree)])
+class BinomialOptionPricingModel():
+    def __init__(self, S0, K, T, sigma, r, N, opttype='C'):
+        self.asset_price = S0
+        self.strike_price = K
+        self.time_to_maturity = T
+        self.asset_volatility = sigma
+        self.risk_free_rate = r
+        self.num_time_steps = N
+        self.opttype = opttype
+        self.stock_price_tree = []
+        self.derivative_price_tree = []
     
-    # First need to calculate the initial values for the last layer of the tree
+    def calculate_derivative_price(self):
+        # At each step in the tree, the price can move up or down by a factor of u or d respectively
+        delta_t = self.time_to_maturity / self.num_time_steps
+        u = np.exp(self.asset_volatility * np.sqrt(delta_t))
+        d = np.exp(-1 * self.asset_volatility * np.sqrt(delta_t))
+        # Calculating risk neutral probability
+        P = ((np.exp(self.risk_free_rate*delta_t) - d)) / (u - d)
 
-    for i in range(N+1): # Tree looks like this [[0], [0, 0], [0, 0, 0], [0, 0, 0, 0]]
-        # print(f"Our binomial tree is: {stock_price_tree}")
-        # print(f"Length of the list nodes at index {i}: {len(stock_price_tree[i])}")
-        for j in range(0, len(stock_price_tree[i])):
+        
+        for level_in_tree in range(1,self.num_time_steps+2):
+            self.stock_price_tree.append([0 for _ in range(0, level_in_tree)])
+            self.derivative_price_tree.append([0 for _ in range(0, level_in_tree)])
+        
+        # First need to calculate the initial values for the last layer of the tree
+
+        for i in range(self.num_time_steps+1): # Tree looks like this [[0], [0, 0], [0, 0, 0], [0, 0, 0, 0]]
             # print(f"Our binomial tree is: {stock_price_tree}")
-            calculation = S0 * (u ** j) * (d ** i)
-            stock_price_tree[i][j] = S0 * (u ** j) * (d ** (i-j))
+            # print(f"Length of the list nodes at index {i}: {len(stock_price_tree[i])}")
+            for j in range(0, len(self.stock_price_tree[i])):
+                # print(f"Our binomial tree is: {stock_price_tree}")
+                calculation = self.asset_price * (u ** j) * (d ** i)
+                self.stock_price_tree[i][j] = self.asset_price * (u ** j) * (d ** (i-j))
 
-    for k in range(0, N+1): # Tree looks like this [[0], [0, 0], [0, 0, 0], [0, 0, 0, 0]]
-        if opttype == 'C':
-            derivative_price_tree[-1][k] = max(stock_price_tree[-1][k] - K, 0) # For call
-        elif opttype == 'P':
-            derivative_price_tree[-1][k] = max(K - stock_price_tree[-1][k], 0) # For Put
-
-
-    for x in range(N-1, -1, -1):
-        for y in range(len(derivative_price_tree[x])):
-            derivative_price_tree[x][y] = np.exp(-1*r*delta_t) * (P * derivative_price_tree[x+1][y+1] + (1-P)*derivative_price_tree[x+1][y])
-    # derivative_price_tree[k][n] = np.exp(-1*r*delta_t) * P * stock_price_tree[k-1][n-1] + (1-P)*derivative_price_tree[k-1][n]
-
-    #stock_price_tree[i][j] = np.exp(-1*r*delta_t) * P * stock_price_tree[i-1][j-1] + (1-P)*stock_price_tree[i-1][j]
+        for k in range(0, self.num_time_steps+1): # Tree looks like this [[0], [0, 0], [0, 0, 0], [0, 0, 0, 0]]
+            if self.opttype == 'C':
+                self.derivative_price_tree[-1][k] = max(self.stock_price_tree[-1][k] - self.strike_price, 0) # For call
+            elif self.opttype == 'P':
+                self.derivative_price_tree[-1][k] = max(self.strike_price - self.stock_price_tree[-1][k], 0) # For Put
 
 
-    return derivative_price_tree[0][0]
+        for x in range(self.num_time_steps-1, -1, -1):
+            for y in range(len(self.derivative_price_tree[x])):
+                self.derivative_price_tree[x][y] = np.exp(-1*self.risk_free_rate*delta_t) * (P * self.derivative_price_tree[x+1][y+1] + (1-P)*self.derivative_price_tree[x+1][y])
+        # derivative_price_tree[k][n] = np.exp(-1*r*delta_t) * P * stock_price_tree[k-1][n-1] + (1-P)*derivative_price_tree[k-1][n]
+
+        #stock_price_tree[i][j] = np.exp(-1*r*delta_t) * P * stock_price_tree[i-1][j-1] + (1-P)*stock_price_tree[i-1][j]
+
+
+        return self.derivative_price_tree[0][0]
 
 # print(calculate_derivative_price(S0, K, T, sigma, r, N))
 
@@ -65,6 +67,8 @@ r_list =          [0.0,0.01,0.02,0.03,0.04,0.05,0.06,0.07,0.08,0.09,0.1]
 
 option_prices = np.zeros((len(volatility_list), len(r_list)))
 
+binary_model = BinomialOptionPricingModel(100, 100, 1, 0.2, 0.05, 5, 'C')
+print(binary_model.calculate_derivative_price())
 # for i, sigma in enumerate(volatility_list):
 #     for j, r in enumerate(r_list):
 #         to_set = binomial_option_pricing_model(S0, K, T, sigma, r, N)
@@ -88,9 +92,20 @@ option_prices = np.zeros((len(volatility_list), len(r_list)))
 
 # plt.show()
 
-def black_scholes_model(K, S0, T, r, sigma, opttype='C'):
-    d1 = (np.log(S0 / K) + (r + ((sigma ** 2))/2)*T) / sigma * np.sqrt(T)
-    d2 = (np.log(S0 / K) + (r - ((sigma ** 2))/2)*T) / sigma * np.sqrt(T)
-    return (S0 * norm.cdf(d1)) - (K*(np.exp(-1*r*T)*norm.cdf(d2)))
+class BlackScholesOptionPricingModel():
+    def __init__(self, K, S0, T, r, sigma, opttype='C'):
+        self.asset_price = S0
+        self.strike_price = K
+        self.time_to_maturity = T
+        self.asset_volatility = sigma
+        self.risk_free_rate = r
+        self.opttype = opttype
 
-print(black_scholes_model(100, 100, 1, 0.05, 0.20))
+
+    def calculate_derivative_price(self):
+        d1 = (np.log(self.asset_price / self.strike_price) + (self.risk_free_rate + ((self.asset_volatility ** 2))/2)*self.time_to_maturity) / self.asset_volatility * np.sqrt(self.time_to_maturity)
+        d2 = (np.log(self.asset_price / self.strike_price) + (self.risk_free_rate - ((self.asset_volatility ** 2))/2)*self.time_to_maturity) / self.asset_volatility * np.sqrt(self.time_to_maturity)
+        return (self.asset_price * norm.cdf(d1)) - (self.strike_price*(np.exp(-1*self.risk_free_rate*self.time_to_maturity)*norm.cdf(d2)))
+
+bsm = BlackScholesOptionPricingModel(100, 100, 1, 0.05, 0.2, 'C')
+print(bsm.calculate_derivative_price())
